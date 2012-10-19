@@ -1,24 +1,24 @@
-===============================================================
-Author: Travis W. Peters
-School: Western Washington University
-Date  : October 2012
-================================================================
-net-uno
-  The program that lives here is a networked implementation of
-  the "popular" game UNO. Feel free to use code if it is useful, 
-  but do the right thing and cite it. 
+###README
+----------------------------------------------------------------
+######Author: Travis W. Peters
+######School: Western Washington University
+######Date  : October 2012
+----------------------------------------------------------------
 
-  The two main components are:
-    server
-    client
+net-onu (<-- backwards spelling)
 
-  This is my attempt at implementing my first GUI for the game
-  as well, while learning about some networking concepts in my
-  final quarter at Western.
+  A networked implementation of the game "ONU".
 
-  More details can be found at a later time in soon-to-be
-  written supporting documentation. 
+The two main components are:
 
-  Enjoy!
+    `server`
+    `client`
+    
+as well as their respective classes. 
 
-================================================================
+More details can be found at a later time in soon-to-be
+written supporting documentation. 
+
+Enjoy!
+
+----------------------------------------------------------------
