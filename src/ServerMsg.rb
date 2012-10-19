@@ -52,7 +52,7 @@ class ServerMsg
     # command was already taken. If this happens, a number will be appended 
     # to the end of the client's nickname.
     #
-    ACCEPT    = "[accept|RETURN_NAME}]"
+    ACCEPT    = "[accept|RETURN_NAME]"
 
     #
     # This message is sent to a client when it is getting dealt cards. 

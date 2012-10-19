@@ -1,7 +1,7 @@
 #!/usr/local/bin/ruby
 
 # Sockets are in the standard library
-require 'GameServer.rb'
+require 'ServerClass.rb'
 
 # Defaults
 $port       = 5555

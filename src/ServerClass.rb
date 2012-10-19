@@ -32,9 +32,9 @@ class GameServer
     def run()
         
         while true
-            puts "[server] before select"
+
             result = select(@descriptors, nil, nil, @timeout)
-            puts "[server] after select"
+
             if result != nil then
             
                 # Iterate over tagged 'read' descriptors
@@ -53,7 +53,7 @@ class GameServer
                             socket.close
                             #log(msg)
                             @descriptors.delete(socket)
-                        else
+                        else #chat
                             msg = "[#{socket.peeraddr[2]}|#{socket.peeraddr[1]}]:#{socket.gets()}"
                             broadcast(msg, socket)
                             #log(msg)

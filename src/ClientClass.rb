@@ -7,8 +7,11 @@ require 'ClientMsg'
 class GameClient
 
     #
+    #
     # public class methods
     #
+    #
+    
     public
 
     def initialize(hostname, port, clientName)
@@ -21,6 +24,7 @@ class GameClient
         @descriptors  = Array.new()             # Collection of socket
                                                 #    [should only hold 1 socket]
         @descriptors.push(STDIN)                # Client can write manually write to server
+        @MAX_MSG_LEN  = 1024                    # Max length of msg that will be read from server
         connect()                               # Connect to server
 
         log("Game client #{@hostname} started on port #{@port}")
@@ -30,7 +34,7 @@ class GameClient
 
         while true
             puts "[client] before select"
-            result = select(@descriptors, nil, nil, 3)
+            result = select(@descriptors, nil, nil, 9000)
             puts "[client] after select"
             if result != nil then
             
@@ -41,6 +45,7 @@ class GameClient
                     if socket == @clientSocket then
                         puts "reading..."
                         #read()
+                        puts @clientSocket.recvfrom(@MAX_MSG_LEN)
                         
                     elsif socket.eof? then
                         socket.close()
@@ -70,16 +75,40 @@ class GameClient
     end #run
 
     #
+    #
     # private class methods
     #
+    #
+    
     private
 
     def log(msg)
         puts "log: " + msg
     end #log
 
-    def read()
-        puts @clientSocket.gets()
+    def read()     
+        buffer = []
+   
+        while (c = @clientSocket.getc())
+#        c = @clientSocket.getc()
+#        puts "#{c}"
+#        while !(c.eql?("]"))
+#            puts "#{c}"
+            c = c.chr    # convert ASCII value to character
+            if !(c.eql?('[')) and !(c.eql?(']')) then
+                puts "#{c}"
+                buffer.push(c)
+            end #if
+            
+            if (c.eql?(']')) then
+                break
+                puts "broke"
+            end #if
+        end #while
+        puts "broke out!"
+        puts buffer
+        #puts "#{@clientSocket.gets()}"
+
     end #read
 
     def write()
