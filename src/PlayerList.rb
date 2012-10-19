@@ -4,6 +4,8 @@ require File.expand_path("./Player.rb")
 
 class PlayerQueue
     
+    @@number_of_players = 0
+
     #
     # Public constructor
     #
@@ -20,7 +22,9 @@ class PlayerQueue
         if player.kind_of?(Player)
             
             #TODO: only add unique players (name modifier)
+
             @player_queue.push(player)
+            @@number_of_players += 1
         else
             puts "You cannot add a non-player to the Player Queue"
         end
@@ -36,7 +40,10 @@ class PlayerQueue
     
         if player.kind_of?(Player)
             rp = @player_queue.find { |aPlayer| aPlayer.getName == player.getName }
-            @player_queue.delete(rp)
+            if rp != nil then
+                @player_queue.delete(rp)
+                @@number_of_players -= 1
+            end #if             
         end
     
     end

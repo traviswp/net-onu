@@ -3,6 +3,7 @@
 # Sockets are in the standard library
 require 'socket' 
 require 'ServerMsg'
+include ServerMsg
 
 class GameServer
 
@@ -15,12 +16,16 @@ class GameServer
         @port             = port                          # Port #
         @minPlayers       = min                           # Min players needed for game
         @maxPlayers       = max                           # Max players allowed for game
-        @timeout          = timeout                       # Default timeout
         @lobby            = lobby                         # Max # players that can wait for a game
-        @descriptors      = Array.new()                   # Collection of the server's sockets
-        @serverSocket     = TCPServer.new("", port)       # The server socket (TCPServer)
         @gameTimerOn      = false                         # Time until game starts
         @gameInProgress   = false                         # Game status boolean
+
+        # parameters for select
+        @descriptors      = Array.new()                   # Collection of the server's sockets
+        #@out              = Array.new()                   # Collection of the server's sockets
+        @serverSocket     = TCPServer.new("", port)       # The server socket (TCPServer)
+        @timeout          = timeout                       # Default timeout
+
         @descriptors.push(@serverSocket)                  # Add serverSocket to descriptors
         
         #enables the re-use of a socket quickly
@@ -51,18 +56,16 @@ class GameServer
                             msg = "Client left #{socket.peeraddr[2]}:#{socket.peeraddr[1]}"
                             broadcast(msg, socket)
                             socket.close
-                            #log(msg)
                             @descriptors.delete(socket)
                         else #chat
                             msg = "[#{socket.peeraddr[2]}|#{socket.peeraddr[1]}]:#{socket.gets()}"
                             broadcast(msg, socket)
-                            #log(msg)
                         end #if
                         
                     end #if
                 
-                end #for
-            
+                end #for            
+
             end #if
             
         end #while
@@ -100,15 +103,13 @@ class GameServer
         newSocket = @serverSocket.accept
         @descriptors.push(newSocket)
         
-        puts "added new socket to descriptors..."
-        
         # Send acceptance message
-        newSocket.write(ServerMsg::ACCEPT)
-        
-        puts "wrote to client.."
-        
+        args = "yourname" # GET CLIENTNAME
+        msg = ServerMsg.message("accept",args)
+        newSocket.write(msg)
+             
         # Broadcast 
-        msg = "Client joined #{newSocket.peeraddr[2]}:#{newSocket.peeraddr[1]}\n"
+        #msg = "Client joined #{newSocket.peeraddr[2]}:#{newSocket.peeraddr[1]}\n"
         broadcast(msg, newSocket)
     
     end #accept_new_connection

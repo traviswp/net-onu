@@ -5,19 +5,20 @@ class Player
     # Player.new(name) : constructor for object player
     def initialize (name)
         @name = name
-        @score = 0
-    end
+        @games_won = =0
+        @games_played = 0
+    end #initialize
 
     def getName ()
         return @name
-    end
+    end #getName
 
-    def getScore ()
-        return @score
-    end
+    def getStats ()
+        stats = "After #{@games_played} games, you have won #{@games_won}." 
+    end #getStats
     
     def to_s ()
-        return "Player: #{@name}, Score: #{@score}"
+        return "Player: #{@name}"
     end
     
 end

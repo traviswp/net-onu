@@ -41,6 +41,9 @@ end
 #
 # Main
 #
-parse_args()
-unoGameServer = GameServer.new($port, $min, $max, $timeout, $lobby)
-unoGameServer.run()
+
+if __FILE__ == $0 then
+    parse_args()
+    unoGameServer = GameServer.new($port, $min, $max, $timeout, $lobby)
+    unoGameServer.run()
+end #if
