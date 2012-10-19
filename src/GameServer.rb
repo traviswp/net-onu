@@ -2,6 +2,7 @@
 
 # Sockets are in the standard library
 require 'socket' 
+require 'ServerMsg'
 
 class GameServer
 
@@ -31,9 +32,9 @@ class GameServer
     def run()
         
         while true
-        
+            puts "[server] before select"
             result = select(@descriptors, nil, nil, @timeout)
-            
+            puts "[server] after select"
             if result != nil then
             
                 # Iterate over tagged 'read' descriptors
@@ -41,6 +42,7 @@ class GameServer
                 
                     # ServerSocket: Handle connection
                     if socket == @serverSocket then
+                        puts "accepting..."
                         accept_new_connection()
                     else
                         
@@ -98,8 +100,12 @@ class GameServer
         newSocket = @serverSocket.accept
         @descriptors.push(newSocket)
         
+        puts "added new socket to descriptors..."
+        
         # Send acceptance message
-        newSocket.write("Welcome to the UNO game server!\n")
+        newSocket.write(ServerMsg::ACCEPT)
+        
+        puts "wrote to client.."
         
         # Broadcast 
         msg = "Client joined #{newSocket.peeraddr[2]}:#{newSocket.peeraddr[1]}\n"

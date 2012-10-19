@@ -11,7 +11,7 @@ $username   = 'player'
 #
 # parse_args () -- client can redefine $port, $hostname, and $username
 #
-def parse_args(ARGV)
+def parse_args()
 
     # Parse command line arguments
     argc = 0

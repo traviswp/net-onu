@@ -23,15 +23,15 @@ class GameClient
         @descriptors.push(STDIN)                # Client can write manually write to server
         connect()                               # Connect to server
 
-        log("Game Client #{@hostname} started on port #{@port}")
+        log("Game client #{@hostname} started on port #{@port}")
     end #initialize
 
     def run()
 
         while true
-
-            result = select(@descriptors, nil, nil, 0.5)
-            
+            puts "[client] before select"
+            result = select(@descriptors, nil, nil, 3)
+            puts "[client] after select"
             if result != nil then
             
                 # Iterate over tagged 'read' descriptors
@@ -39,13 +39,16 @@ class GameClient
                 
                     # ServerSocket: Handle connection
                     if socket == @clientSocket then
-                        read()
+                        puts "reading..."
+                        #read()
+                        
                     elsif socket.eof? then
-                        socket.close
-                        log(ClientMsg::DROPPED)
+                        socket.close()
+                        log("server connection dropped...")
                         @descriptors.delete(socket)
                         running = false
                     elsif socket == STDIN then
+                        puts "writing..."
                         write()
                     end #if
                 
@@ -76,17 +79,20 @@ class GameClient
     end #log
 
     def read()
-        puts @clientSocket.read()
+        puts @clientSocket.gets()
     end #read
 
     def write()
-        @clientSocket.write(STDIN.gets)
+        @clientSocket.write(STDIN.gets())
     end #write
 
     def connect()
         @clientSocket = TCPSocket.new(@hostname, @port)
         @running = true
         @descriptors.push(@clientSocket)
+        
+        puts(ClientMsg::JOIN) #TESTING
+        
         @clientSocket.write(ClientMsg::JOIN)
     end
 
