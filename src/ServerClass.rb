@@ -22,7 +22,6 @@ class GameServer
 
         # parameters for select
         @descriptors      = Array.new()                   # Collection of the server's sockets
-        #@out              = Array.new()                   # Collection of the server's sockets
         @serverSocket     = TCPServer.new("", port)       # The server socket (TCPServer)
         @timeout          = timeout                       # Default timeout
 
@@ -78,7 +77,7 @@ class GameServer
     private
     
     def log(msg)
-        puts "log: " + msg
+        puts "log: " + msg.to_s
     end #log
     
     def broadcast(msg, omit_sock)
@@ -105,6 +104,7 @@ class GameServer
         
         # Send acceptance message
         args = "yourname" # GET CLIENTNAME
+        
         msg = ServerMsg.message("accept",args)
         newSocket.write(msg)
              

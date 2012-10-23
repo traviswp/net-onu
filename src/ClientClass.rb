@@ -45,24 +45,36 @@ class GameClient
 
                 # Iterate over tagged 'read' descriptors
                 for socket in result[0]
-                
+
                     # ServerSocket: Handle connection
                     if socket == @clientSocket then
+                    
+                        # Read from server
                         puts "reading..."
-                        #read()
-                        puts "socket = " + socket.to_s
-                        puts "client socket = " + @clienSocket.to_s
-                        puts "server: " + @clientSocket.recvfrom(@MAX_MSG_LEN).to_s
-                    elsif @clientSocket.to_s == nil then
-                        socket.close()
-                        log("server connection dropped...")
-                        @descriptors.delete(socket)
-                        running = false
+                        read()
+                        #check = @clientSocket.read() #######################   <<------- I think this is the problem...
+                        #puts "[" + check.to_s + "]"
+                        # Check server status (still connected?)
+                        #if check == "" then
+                        #if false then
+                        #    puts "server connection dropped..."
+                        #    socket.close()
+                        #    @descriptors.delete(socket)
+                        #    exit 0
+                        #end
+                        
+                    elsif @clientSocket.eof? then
+                        #socket.close()
+                        log("eof?...")
+                        #@descriptors.delete(socket)
+                        #running = false
                     elsif socket == STDIN then
                         puts "writing..."
-                        write()
+                        #write()
+                    else
+                        puts "what?"
                     end #if
-                
+
                 end #for
             
             end #if
@@ -90,6 +102,7 @@ class GameClient
     def read() 
     
         buffer = []                                     # msg buffer
+        length = 0
         while (c = @clientSocket.getc())                # process msg 1 character at a time
 
             c = c.chr                                   # convert ASCII value to character
@@ -101,11 +114,15 @@ class GameClient
             end #if
             
             # Terminate msg
-            if (c.eql?(']')) then
+            if (c.eql?(']')) or (c.eql?("\n")) then
                 break
             end #if
+    
+            if (c.eql?("") or (c == nil) or c.eql?("\n")) then
+                puts "thats what I thought..."
+            end #if
 
-            length += 1
+            length+=1
 
         end #while
 
@@ -114,9 +131,10 @@ class GameClient
     end #read
 
     def write()
-        
+        puts "inside write..."
         msg = STDIN.gets()
-
+        puts "stuck getting..."
+        puts msg
         if msg.slice(0,4).eql?("quit") then
             log("signing off...")
             exit 0
@@ -133,9 +151,9 @@ class GameClient
             @running = true
             @descriptors.push(@clientSocket)         
 
-            puts "my_name" + ClientMsg.message("join", $clientname) #TESTING
+            #puts "my_name" + ClientMsg.message("join", [@clientName]) #TESTING
             
-            @clientSocket.write(ClientMsg.message("join", $clientname))
+            @clientSocket.write(ClientMsg.message("join", [@clientName]))
 
             return 0
 
