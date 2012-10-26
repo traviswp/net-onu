@@ -1,6 +1,6 @@
 #!/usr/local/bin/ruby
 
-require File.expand_path("./Player.rb")
+require File.expand_path("./PlayerClass.rb")
 
 class PlayerQueue
     

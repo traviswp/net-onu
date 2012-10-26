@@ -32,6 +32,5 @@ puts ServerMsg.message("players",  ["travis","jessie","matt","big john","little 
 puts ServerMsg.message("startgame",["travis","jessie","matt","little mike"])
 puts ServerMsg.message("tts",      [12])
 puts ServerMsg.message("wait",     ["agent 007"])
-puts
 puts "[done]"
 

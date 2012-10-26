@@ -104,7 +104,7 @@ module ClientMsg
             #    
             #chat      = "[chat|SENDERNAME|MESSAGE]"
             #
-            chat      = "[chat|#{args}]"
+            chat      = "[chat|~#{args}~]"
             
             ####################################################################
             #                                                                  #
@@ -125,7 +125,7 @@ module ClientMsg
                 msg = chat
             end #case
     
-            return msg #+ "\n"
+            return msg + "\n"
 
         else # bad arg count
             return nil

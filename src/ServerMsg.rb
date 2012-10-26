@@ -11,16 +11,16 @@ module ServerMsg
     # Hash: {"command" => "arg_count"}
     #
     @commands = ["accept", "deal", "gg", "go", "invalid", "played", "players", "startgame", "tts", "wait"]
-    @valid_server_commands = {@commands[0] => 1,         # accept
-                              @commands[1] => 1..7,      # deal
-                              @commands[2] => 1,         # gg
-                              @commands[3] => 1,         # go
-                              @commands[4] => 1,         # invalid
-                              @commands[5] => 2,         # played
-                              @commands[6] => 0..100,    # players
-                              @commands[7] => 2..100,    # startgame
-                              @commands[8] => 1,         # tts
-                              @commands[9] => 1}         # wait
+    @valid_server_commands = {@commands[0] => 1,          # accept
+                              @commands[1] => 7,          # deal
+                              @commands[2] => 1,          # gg
+                              @commands[3] => 1,          # go
+                              @commands[4] => 1,          # invalid
+                              @commands[5] => 2,          # played
+                              @commands[6] => 100,        # players
+                              @commands[7] => 100,        # startgame
+                              @commands[8] => 1,          # tts
+                              @commands[9] => 1}          # wait
                               
     @keys                  = @valid_server_commands.keys()
     @default               = "unknown command"
@@ -50,18 +50,20 @@ module ServerMsg
 
     end #formatMessage
 
-    def ServerMsg.message(command, args)
-    
+    def ServerMsg.message(command, info)
+
         # Determine if the command is valid & that there are an appropriate amount
         # of "arguments" passed in for that command 
         cmd = @keys.find { |c| c == command }
+
         if (cmd != nil) then
             val = @valid_server_commands[cmd]
-            return nil
+            #return nil
         end #if
         argc = info.size()
 
-        if (val == argc) then
+
+        if (argc <= val) then
 
             # format the arguments to the message before returning the string
             # that is to be sent to the server.  
@@ -149,7 +151,7 @@ module ServerMsg
             #
             # A few examples of cards: a red 4 is R4, a green draw 2 is GD, 
             # a yellow skip is YS, a blue reverse is BU, a wild card is NW, 
-            #a wild draw 4 card is NF, etc.
+            # a wild draw 4 card is NF, etc.
             # 
             # deal      = "[deal|CARD1,CARD2,...]"
             #

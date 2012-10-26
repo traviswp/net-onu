@@ -4,8 +4,8 @@ class Player
 
     # Player.new(name) : constructor for object player
     def initialize (name)
-        @name = name
-        @games_won = =0
+        @name         = name
+        @games_won    = 0
         @games_played = 0
     end #initialize
 

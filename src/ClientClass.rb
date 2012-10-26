@@ -16,6 +16,7 @@ class GameClient
     public
 
     def initialize(hostname, port, clientName)
+
         @hostname     = hostname                # Server address to connect to
         @port         = port                    # Server port to connect to
         @clientName   = clientName              # Client's name
@@ -23,63 +24,65 @@ class GameClient
         @playing      = false                   # Boolean to detect game play status
         @clientSocket = []                      # Client socket (TCPSocket)
         @MAX_MSG_LEN  = 1024                    # Max length of msg that will be read from server
+        @buffer = Array.new(@MAX_MSG_LEN)
 
         # parameters for select
         @descriptors  = Array.new()             # Collection of socket [should only hold 1 socket]
-        #@out
         @timeout      = 3                       # Client timeout for select call
 
         @descriptors.push(STDIN)                # Client can write manually write to server
-        connect()                               # Connect to server
 
         log("Game client #{@hostname} started on port #{@port}")
+
+        connect()                               # Connect to server
+
     end #initialize
 
     def run()
 
-        while true
+        begin # error handling block
 
-            result = select(@descriptors, nil, nil, @timeout)
+            while true
 
-            if result != nil then
+                result = select(@descriptors, nil, nil, @timeout)
 
-                # Iterate over tagged 'read' descriptors
-                for socket in result[0]
+                if result != nil then
 
-                    # ServerSocket: Handle connection
-                    if socket == @clientSocket then
-                    
-                        # Read from server
-                        puts "reading..."
-                        read()
-                        #check = @clientSocket.read() #######################   <<------- I think this is the problem...
-                        #puts "[" + check.to_s + "]"
-                        # Check server status (still connected?)
-                        #if check == "" then
-                        #if false then
-                        #    puts "server connection dropped..."
-                        #    socket.close()
-                        #    @descriptors.delete(socket)
-                        #    exit 0
-                        #end
+                    # Iterate over tagged 'read' descriptors
+                    for socket in result[0]
+
+                        # ServerSocket: Handle connection
+                        if socket == @clientSocket then
                         
-                    elsif @clientSocket.eof? then
-                        #socket.close()
-                        log("eof?...")
-                        #@descriptors.delete(socket)
-                        #running = false
-                    elsif socket == STDIN then
-                        puts "writing..."
-                        #write()
-                    else
-                        puts "what?"
-                    end #if
+                            # Read from server
+                            check = read()
 
-                end #for
-            
-            end #if
+                            # Processing if check == nil (connection dropped)
+                            if check == nil then
+                                exit 0
+                            end
 
-        end #while
+                        # Client has written something
+                        elsif socket == STDIN then
+                            write()
+                        else
+                            err("unknown")
+                        end #if
+
+                    end #for
+                end #if
+
+            end #while
+
+        rescue Interrupt
+            puts "\nclient application interrupted: shutting down..."
+            exit 0
+        rescue SystemExit => e
+            # On a system exit, exit gracefully
+        rescue StandardError => e
+            puts 'Exception: ' + e.message()
+            print e.backtrace.join('\n')
+        end # error handling block
 
     end #run
 
@@ -97,50 +100,34 @@ class GameClient
 
     def err(msg)
         puts "log: error: " + msg
-    end
+    end #err
 
     def read() 
-    
-        buffer = []                                     # msg buffer
-        length = 0
-        while (c = @clientSocket.getc())                # process msg 1 character at a time
 
-            c = c.chr                                   # convert ASCII value to character
+        msg = @clientSocket.gets()
 
-            # Construct msg buffer from server
-            if !(c.eql?('[')) and !(c.eql?(']')) then
-                puts "character = #{c}"
-                buffer.push(c)
-            end #if
-            
-            # Terminate msg
-            if (c.eql?(']')) or (c.eql?("\n")) then
-                break
-            end #if
-    
-            if (c.eql?("") or (c == nil) or c.eql?("\n")) then
-                puts "thats what I thought..."
-            end #if
-
-            length+=1
-
-        end #while
-
-        return buffer
+        if msg == nil then
+            dropped_connection()
+            return nil
+        else
+            log("read: " + msg)
+            return msg
+        end #if
 
     end #read
 
     def write()
-        puts "inside write..."
+
         msg = STDIN.gets()
-        puts "stuck getting..."
-        puts msg
-        if msg.slice(0,4).eql?("quit") then
+
+        if msg.slice(0,4).eql?("quit") || msg.slice(0,4).eql?("exit") then
             log("signing off...")
             exit 0
         end
 
         @clientSocket.write(msg)
+        log("write: " + msg)
+
     end #write
 
     def connect()
@@ -148,12 +135,12 @@ class GameClient
         begin 
 
             @clientSocket = TCPSocket.new(@hostname, @port)
-            @running = true
+            #@running = true
             @descriptors.push(@clientSocket)         
 
-            #puts "my_name" + ClientMsg.message("join", [@clientName]) #TESTING
-            
-            @clientSocket.write(ClientMsg.message("join", [@clientName]))
+            msg = ClientMsg.message("join", [@clientName])
+            log("write: " + msg)
+            @clientSocket.write(msg)
 
             return 0
 
@@ -165,5 +152,11 @@ class GameClient
         end #begin
 
     end #connect
+
+    def dropped_connection()
+        puts "server connection dropped..."
+        @clientSocket.close()
+        @descriptors.delete(@clientSocket)
+    end #dropped_connection
 
 end #GameClient
