@@ -1,0 +1,17 @@
+TODO List:
+
+1) Fix messages so that we read in all of a message into another buffer so that we can process
+    messages properly -- right now I am potentially dropping messages when there are more
+    complete messages waiting to be processed after the first message I see. 
+
+    - Use a loop and read a single character at a time. 
+    - Search for:
+      + max length of message, or
+      + closing delimeter
+
+2) Implement a timer so that the game will start once the timer has timed out. The timer should just use the
+    timeout value on our call to "select" in the main loop in the "run" method.
+
+3) When establishing connections, create a "player" object for the game. 
+
+4) 
