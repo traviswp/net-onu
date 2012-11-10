@@ -77,6 +77,8 @@ class GameServer
                     end #for            
 
                 end #if
+
+				#service game state
                 
             end #while
 
@@ -165,7 +167,7 @@ class GameServer
         #TODO: regular expressions to validate a client name
 
         # Match (1) the command and (2) the content of the message
-        re = /\[([a-z]{2,9})\|([\w\W]{0,256})\]/i
+        re = /\[([a-z]{2,9})\|([\w\W]{0,128})\]/i
         args = cmd.match re
 
         if args != nil then

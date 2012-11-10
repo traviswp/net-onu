@@ -2,13 +2,15 @@
 
 # Sockets are in the standard library
 require 'ServerClass.rb'
+require 'Constants'
+include Constants
 
 # Defaults
-$port       = 5555
-$min        = 2
-$max        = 10
-$timeout    = 3
-$lobby      = 60
+$port       = Constants::PORT
+$min        = Constants::MIN
+$max        = Constants::MAX
+$timeout    = Constants::TIMEOUT
+$lobby      = Constants::LOBBY
 
 #
 # parse_args () -- server can redefine port#, timeout, min/max # of players, and lobby capacity

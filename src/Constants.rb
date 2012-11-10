@@ -3,28 +3,29 @@
 #
 # Constants
 #
+
 module Constants
 
     #
     # Defaults
     #
 
-    timeout  = 1
-    port     = 5555
-    username = 'player'
-    hostname = 'localhost'
+    TIMEOUT  = 3
+    PORT     = 5555
+    USERNAME = 'player'
+    HOSTNAME = 'localhost'
 
-'''
-    def initialize ()
-        @timeout  = 1
-        @port     = 5555
-        @username = player
-        @hostname = localhost
-    end #initialize
+	#
+	# Server Globals
+	#
 
-    attr_accessor :timeout
-    attr_accessor :port
-    attr_accessor :username
-    attr_accessor :hostname
-'''
+
+	#
+	# Client Globals
+	#
+
+	MIN     = 2
+	MAX     = 10	
+	LOBBY   = 30
+
 end #Constants

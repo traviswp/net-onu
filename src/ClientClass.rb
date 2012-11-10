@@ -144,10 +144,11 @@ class GameClient
 
             return 0
 
-        #rescue Exception => e
-
-        #    err("could not connect to #{@hostname} on port #{@port}")
-        #    exit -1
+        rescue Errno::ECONNREFUSED
+            puts "connection refused: could not connect to #{@hostname} on port #{@port}."
+            exit 0
+        rescue SystemExit => e
+            # On a system exit, exit gracefully
 
         end #begin
 
