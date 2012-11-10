@@ -162,12 +162,8 @@ class GameServer
     #
 
     private
-	
-	def ready
-		return !(IO.select([self], nil, nil, 0) == nil)
-	end
     
-	def log(msg)
+    def log(msg)
         puts "log: " + msg.to_s
     end #log
     
