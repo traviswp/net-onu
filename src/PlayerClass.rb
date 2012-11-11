@@ -25,7 +25,7 @@ class Player
 	end #getGamesWon
 
 	def setGamesWon()
-		@games_won++
+		@games_won = @games_won + 1
 	end #setGamesWon
 
 	def getGamesPlayed()
@@ -33,7 +33,7 @@ class Player
 	end #getGamesPlayed
 
 	def setGamesPlayed()
-		@games_played++
+		@games_played = @games_played + 1
 	end #setGamesPlayed
 
 	#

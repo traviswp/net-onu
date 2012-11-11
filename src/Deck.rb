@@ -63,10 +63,9 @@ class Deck
 	end #deal
 
 	def discard( card )
-		if 
-		if (card.kind_of? String)
+		if(card.kind_of? String)
 			#puts "Discarding: " + card
-			@discard_pile.unshift (card)  # prepend card
+			@discard_pile.unshift(card)  # prepend card
 			setTopCard() 
 		end #if
 

@@ -2,6 +2,7 @@
 
 require 'Card'
 require 'Deck'
+require 'time'
 
 def test_Card_isValid()
 
@@ -71,9 +72,27 @@ def test_Deck()
 
 end #test_Deck()
 
+def test_timer()
+	
+	start_time = Time.now.to_i
+	puts start_time
+	count = 0
+	while (true)
+		
+		current_time = Time.now.to_i
+
+		if (current_time - start_time >= 5)
+			puts "the start time was: ", start_time, " and the current time is ", current_time, "diff: ", (current_time-start_time).abs().to_s
+			break
+		end
+	end #while
+
+end #test_timer
+
 if __FILE__ == $0 then
 
 #test_Card_isValid()
-test_Deck()
+#test_Deck()
+test_timer()
 
 end #if

@@ -102,9 +102,9 @@ class GameClient
         puts "log: error: " + msg
     end #err
 
-    def read() 
-
-        msg = @clientSocket.gets()
+    def read()
+	
+		msg = @clientSocket.gets()
 
         if msg == nil then
             dropped_connection()
