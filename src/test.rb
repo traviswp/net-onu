@@ -4,10 +4,15 @@ require 'Card'
 require 'Deck'
 require 'time'
 
+def test_serverMsg()
+
+end #test_serverMsg
+
 def test_Card_isValid()
 
 	c = Card.new()
 
+	myCard = "n5"
 	myCard1 = "G9"
 	myCard2 = "NF"
 	myCard3 = "RS"
@@ -20,6 +25,7 @@ def test_Card_isValid()
 	myCard10 = 5
 	myCard11 = false
 
+	puts c.isValid(myCard0)
 	puts c.isValid(myCard1)
 	puts c.isValid(myCard2)
 	puts c.isValid(myCard3)
@@ -91,8 +97,9 @@ end #test_timer
 
 if __FILE__ == $0 then
 
+test_ServerMsg()
 #test_Card_isValid()
 #test_Deck()
-test_timer()
+#test_timer()
 
 end #if

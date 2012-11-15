@@ -10,17 +10,18 @@ module ServerMsg
     #
     # Hash: {"command" => "arg_count"}
     #
-    @commands = ["accept", "deal", "gg", "go", "invalid", "played", "players", "startgame", "tts", "wait"]
-    @valid_server_commands = {@commands[0] => 1,          # accept
-                              @commands[1] => 7,          # deal
-                              @commands[2] => 1,          # gg
-                              @commands[3] => 1,          # go
-                              @commands[4] => 1,          # invalid
-                              @commands[5] => 2,          # played
-                              @commands[6] => 100,        # players
-                              @commands[7] => 100,        # startgame
-                              @commands[8] => 1,          # tts
-                              @commands[9] => 1}          # wait
+    @commands = ["ACCEPT", "CHAT", "DEAL", "GG", "GO", "INVALID", "PLAYED", "PLAYERS", "STARTGAME", "UNO", "WAIT"]
+    @valid_server_commands = {@commands[0] => 1,            # accept
+							  @commands[1] => 2,            # chat
+                              @commands[2] => 7,            # deal
+                              @commands[3] => 1,            # gg
+                              @commands[4] => 1,            # go
+                              @commands[5] => 1,            # invalid
+                              @commands[6] => 2,            # played
+                              @commands[7] => 100,          # players
+                              @commands[8] => 100,          # startgame
+							  @commands[9] => 1,            # uno
+                              @commands[10] => 1}           # wait
                               
     @keys                  = @valid_server_commands.keys()
     @default               = "unknown command"
@@ -42,8 +43,8 @@ module ServerMsg
             return p_list 
         else
             for i in 0...argc-1                    # process the list by looping through
-                p_list = p_list + list[i] + "|"    # concatenating the strings and
-            end                                    # separating them with the pipe character
+                p_list = p_list + list[i] + ","    # concatenating the strings and
+            end                                    # separating them with the commas
             p_list = p_list + list[argc-1]
             return p_list
         end #if    
@@ -52,18 +53,24 @@ module ServerMsg
 
     def ServerMsg.message(command, info)
 
+		# initial type check
+		if !(command.kind_of? String)
+			return nil
+		end
+
         # Determine if the command is valid & that there are an appropriate amount
         # of "arguments" passed in for that command 
-        cmd = @keys.find { |c| c == command }
-
+        cmd = @keys.find { |c| c.downcase() == command.downcase() }
+		
+		val = 0
         if (cmd != nil) then
+			cmd = cmd.upcase()
             val = @valid_server_commands[cmd]
-            #return nil
         end #if
-        argc = info.size()
+        
+		argc = info.size()
 
-
-        if (argc <= val) then
+        if ((argc > 0) && (argc <= val)) then
 
             # format the arguments to the message before returning the string
             # that is to be sent to the server.  
@@ -75,33 +82,11 @@ module ServerMsg
             #                                                                      #
             ########################################################################
     
-            #
-            # This message is sent to all of the currently connected clients from the 
-            # server listing all of the players that are connected and waiting to play. 
-            # In the event a client disconnects, another Players command will be sent 
-            # out to show the new player list.
-            #
-            # PLAYERS   = "[players|NAME1,NAME2,...]"
-            #
-            players   = "[players|#{args}]"
-    
-            #
-            # This message is sent to all of the currently connected clients from the 
-            # server telling all of the clients that the game has started. This message 
-            # also lists all of the players in the game.
-            #
-            # startgame = "[startgame|NAME1,NAME2,...]"
-            #
-            startgame = "[startgame|#{args}]"
-    
-            #
-            # This message is sent to the clients from the server telling all of the 
-            # players who just played a card and what card they played.
-            #
-            # played    = "[played|PLAYERNAME|CARD]"
-            #
-            played    = "[played|#{args}]"
-            
+			#
+			#
+			#
+			chat = "[CHAT|#{sendername},~#{args}~]"
+
             #
             # gg = "good game" & signifies game over.
             #
@@ -111,7 +96,42 @@ module ServerMsg
             #
             # gg        = "[gg|WINNER_NAME]"
             #
-            gg        = "[gg|#{args}]"
+            gg = "[GG|#{args}]"
+    
+            #
+            # This message is sent to the clients from the server telling all of the 
+            # players who just played a card and what card they played.
+            #
+            # played    = "[played|PLAYERNAME,CARD]"
+            #
+            played = "[PLAYED|#{args}]"
+            
+            #
+            # This message is sent to all of the currently connected clients from the 
+            # server listing all of the players that are connected and waiting to play. 
+            # In the event a client disconnects, another Players command will be sent 
+            # out to show the new player list.
+            #
+            # PLAYERS   = "[players|NAME1,NAME2,...]"
+            #
+            players = "[PLAYERS|#{args}]"
+    
+            #
+            # This message is sent to all of the currently connected clients from the 
+            # server telling all of the clients that the game has started. This message 
+            # also lists all of the players in the game.
+            #
+            # startgame = "[startgame|NAME1,NAME2,...]"
+            #
+            startgame = "[STARTGAME|#{args}]"
+			
+			#
+			# This message is sent to all clients to indicate when a player has
+			# only one remaining card.
+			#
+			# uno = "[uno|name]"
+			#
+			uno = "[UNO|#{args}]"
             
             ########################################################################
             #                                                                      #
@@ -128,7 +148,7 @@ module ServerMsg
             #
             # accept    = "[accept|USERNAME]"
             #
-            accept    = "[accept|#{args}]"
+            accept    = "[ACCEPT|#{args}]"
             
             #
             # This message is sent to a client when it is getting dealt cards. 
@@ -155,7 +175,7 @@ module ServerMsg
             # 
             # deal      = "[deal|CARD1,CARD2,...]"
             #
-            deal      = "[deal|#{args}]"
+            deal      = "[DEAL|#{args}]"
     
     
             #
@@ -170,7 +190,7 @@ module ServerMsg
             #
             # go        = "[go|TOPCARD]"
             #
-            go        = "[go|#{args}]"
+            go        = "[GO|#{args}]"
             
             #
             # This message is sent to the client that just tried to play an invalid 
@@ -182,7 +202,7 @@ module ServerMsg
             #
             # invalid   = "[invalid|MESSAGE]"
             #
-            invalid   = "[invalid|#{args}]"
+            invalid   = "[INVALID|#{args}]"
     
             #
             # This message is sent to the client from the server when the client tried 
@@ -191,17 +211,8 @@ module ServerMsg
             #
             # wait      = "[wait|RETURN_NAME]"
             #
-            wait      = "[wait|#{args}]"
+            wait      = "[WAIT|#{args}]"
             
-            #
-            # This message is sent to a client when they join the server while it is 
-            # in the lobby state. This will tell the player how much longer until the  
-            # game begins.
-            #
-            # tts       = "[tts|TIME_BEFORE_GAME_STARTS]"
-            #
-            tts       = "[tts|#{args}]"
-
             ####################################################################
             #                                                                  #
             #                          Construct Message                       #
@@ -215,23 +226,25 @@ module ServerMsg
     
             when @commands[0]         #  accept message 
                 msg = accept
-            when @commands[1]         #  deal message
+            when @commands[1]         #  chat message
+                msg = chat
+            when @commands[2]         #  deal message
                 msg = deal
-            when @commands[2]         #  gg message
+            when @commands[3]         #  gg message
                 msg = gg
-            when @commands[3]         #  go message
+            when @commands[4]         #  go message
                 msg = go
-            when @commands[4]         #  invalid message
+            when @commands[5]         #  invalid message
                 msg = invalid
-            when @commands[5]         #  played message
+            when @commands[6]         #  played message
                 msg = played
-            when @commands[6]         #  players message
+            when @commands[7]         #  players message
                 msg = players
-            when @commands[7]         #  startgame message
+            when @commands[8]         #  startgame message
                 msg = startgame
-            when @commands[8]         #  tts message
-                msg = tts
-            when @commands[9]         #  wait message
+            when @commands[9]         #  uno message
+                msg = uno
+            when @commands[10]        #  wait message
                 msg = wait
             end #case
     
