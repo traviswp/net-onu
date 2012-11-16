@@ -138,7 +138,7 @@ class GameClient
             #@running = true
             @descriptors.push(@clientSocket)         
 
-            msg = ClientMsg.message("join", [@clientName])
+            msg = ClientMsg.message("JOIN", [@clientName])
             log("write: " + msg)
             @clientSocket.write(msg)
 

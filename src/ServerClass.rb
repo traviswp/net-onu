@@ -39,7 +39,7 @@ class GameServer
         @server_socket.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, 1)
 
         # variables: player management
-        @players_list     = PlayerQueue.new()
+        @player_list      = PlayerQueue.new()
 		@current_players  = 0                             # Current number of players connected (for next/current game)
 		@total_players    = 0                             # Total number of players connected
         @min_players      = min                           # Min players needed for game
@@ -80,6 +80,8 @@ class GameServer
                                 @descriptors.delete(socket)
 								
 								# HACK?
+								#player = ...? # set player to be deleted based on descriptor
+								#@player_list.remove(player)
 								@current_players = @current_players - 1
 								@total_players = @total_players - 1
                             else #chat
@@ -193,22 +195,27 @@ class GameServer
         # Send acceptance message
         args = new_socket.gets()
 
-        ##################################
+        ########################################
         client_name = name_validation(args)
 		
 		# create Player object
+		p = Player.new(client_name)
+
 		# add player to player list
+		@player_list.add(p)
+		
 		@current_players = @current_players + 1
 		@total_players = @total_players + 1
-        ##################################
+        ########################################
 
-        msg = ServerMsg.message("accept",[client_name])
-        puts "message: " + msg
+        msg = ServerMsg.message("ACCEPT",[client_name])
+        #puts "message: " + msg
       
         new_socket.write(msg)
 
         # Broadcast 
-        msg = "Client joined #{new_socket.peeraddr[2]}:#{new_socket.peeraddr[1]}\n"
+        #msg = "Client joined #{new_socket.peeraddr[2]}:#{new_socket.peeraddr[1]}\n"
+		msg = "#{client_name} has joined\n"
         broadcast(msg, new_socket)
 
     end #accept_new_connection

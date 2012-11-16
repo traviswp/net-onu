@@ -10,6 +10,7 @@ class Player
         @name         = name
         @games_won    = 0
         @games_played = 0
+		@cards        = []
     end #initialize
 
 	#
@@ -41,11 +42,19 @@ class Player
 	#
 
     def getStats()
-        stats = "After #{@games_played} games, you have won #{@games_won}." 
+        stats = "After #{@games_played} games, you have won #{@games_won}.\n" 
     end #getStats
     
     def toString()
-        return "Player: #{@name}"
+		str = ""
+		str += "Player: #{@name}\n"
+		str += "Cards: "
+		@cards.each{ |c|
+			str += c
+		}
+		str += "\n"
+		str += getStats()
+        return str
     end #toString
     
 end

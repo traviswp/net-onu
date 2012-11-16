@@ -73,9 +73,14 @@ module ServerMsg
         if ((argc > 0) && (argc <= val)) then
 
             # format the arguments to the message before returning the string
-            # that is to be sent to the server.  
-            args = formatMessage(info, argc)
-            
+            # that is to be sent to the server. 
+			if (cmd == "CHAT") 
+				sendername = info[0]
+				args = info[1]
+			else
+				args = formatMessage(info, argc)
+            end #if
+			
             ########################################################################
             #                                                                      #
             #                         Broadcasted Messages                         #
