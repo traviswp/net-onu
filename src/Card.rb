@@ -10,7 +10,7 @@ class Card
 	#       can be represented by the valid suffixes (listed below). 
 	#
 	
-	$valid_prefix = ["R", "G", "B", "Y"] #, "N"]
+	PREFIX = ["R", "G", "B", "Y"] #, "N"]
 
 	#
 	# A suffix consists of a valid number, action, or identifier
@@ -19,7 +19,7 @@ class Card
 	#	- valid identifier: W (wild), F (wild draw four)
 	#
 	
-	$valid_suffix = ["D", "S", "R", "W", "F", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"] 
+	SUFFIX = ["D", "S", "R", "W", "F", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"] 
 
 	attr_accessor :prefix, :suffix
 
@@ -27,9 +27,11 @@ class Card
 	# Constructor
 	#
 
-	def initialize()#(prefix,suffix)
-		self.prefix# = prefix 
-		self.suffix# = suffix
+	def initialize(prefix,suffix)
+		#raise ArgumentError.new("#{prefix} is an illegal card prefix") unless PREFIX.include? prefix
+		#raise ArgumentError.new("#{suffix} is an illegal card suffix") unless PREFIX.include? prefix
+		@prefix = prefix
+		@suffix = suffix
 	end #initialize
 
 	#
@@ -38,9 +40,8 @@ class Card
 	# being played is valid. 
 	#
 
-	# TODO: currently you pass in a string - if we want to utilize this
-	#       class, we should pass in a card object...
-	def isValid( card )
+	def valid_str?(card)
+
 
 		# check input 'card' - verify it is a string
 		if !(card.kind_of? String)
@@ -61,8 +62,35 @@ class Card
 		prefix = card[0].chr
 		suffix = card[1].chr
 
-		return ($valid_prefix.include?(prefix) and $valid_suffix.include?(suffix))
+		return (check_prefix(prefix) and check_suffix(suffix))
 
-	end #isValid
+	end #valid?
+
+	def valid_card?(card)
+
+		# check card type
+		if !(card.kind_of? Card)
+			return false
+		end
+
+		return ((check_prefix(card.prefix)) && (check_suffix(card.suffix)))
+ 
+	end #valid_card?
+
+	def to_s()
+		return "#{@prefix}#{@suffix}"
+	end #to_s
+
+	def eql?(card)
+		return @prefix == card.prefix && @suffix = card.suffix
+	end #eql?
+
+	def check_prefix(prefix)
+		return PREFIX.include? prefix
+	end #check_prefix
+
+	def check_suffix(suffix)
+		return SUFFIX.include? suffix
+	end #check_suffix
 
 end #Card

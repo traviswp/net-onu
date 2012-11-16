@@ -2,6 +2,7 @@
 
 # Sockets are in the standard library
 require 'socket' 
+require 'Deck'
 require 'ServerMsg'
 require 'PlayerList'
 require 'time'
@@ -17,6 +18,8 @@ class GameServer
     #
 
     public
+
+	attr_reader :deck
     
     def initialize(port, min, max, timeout, lobby)
 	
@@ -33,18 +36,28 @@ class GameServer
         @descriptors      = Array.new()                   # Collection of the server's sockets
         @server_socket    = TCPServer.new("", port)       # The server socket (TCPServer)
         @timeout          = timeout                       # Default timeout
-        @descriptors.push(@server_socket)                  # Add serverSocket to descriptors
+        @descriptors.push(@server_socket)                 # Add serverSocket to descriptors
         
         # enables the re-use of a socket quickly
         @server_socket.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, 1)
 
         # variables: player management
-        @player_list      = PlayerQueue.new()
+        @players          = PlayerQueue.new()
+        @waiting          = PlayerQueue.new()
 		@current_players  = 0                             # Current number of players connected (for next/current game)
 		@total_players    = 0                             # Total number of players connected
         @min_players      = min                           # Min players needed for game
         @max_players      = max                           # Max players allowed for game
         @lobby            = lobby                         # Max # players that can wait for a game
+		@direction        = 1                             # direction of game play (1 or -1 for positive or negative, respectively)
+		@step             = 1                             # increment @step players (normal: 1; skip: add 1 to make 2)
+		@next             = 0                             # index of the next player
+
+		# variables: deck/card management
+		@deck = Deck.new()
+
+		# variables: game states
+		@deck
 
 		@buffer           = ""
 
@@ -81,7 +94,7 @@ class GameServer
 								
 								# HACK?
 								#player = ...? # set player to be deleted based on descriptor
-								#@player_list.remove(player)
+								#@players.remove(player)
 								@current_players = @current_players - 1
 								@total_players = @total_players - 1
                             else #chat
@@ -111,34 +124,35 @@ class GameServer
 				
 				player_check = ((@min_players <= @current_players) && (@current_players <= @max_players))
 				
-				if (@game_in_progress && player_check)                          # game in progress
+				if (@game_in_progress && player_check) then                     # game in progress
 					puts "service: game in progress - check game state(s)"
 					# TODO: add conditional logic to check for game-end
-					@game_in_progress = false                                   # game end: deactivate game_in_progress
-				elsif (@game_timer_on) 
+					#@game_in_progress = false                                   # game end: deactivate game_in_progress
+					play!()
+				elsif (@game_timer_on) then
 					@current_time = Time.now().to_i
 					puts "timer: " + ((@current_time-@start_time).abs()).to_s
 
-					if ((@current_time-@start_time).abs() > @timeout)           # start game
+					if ((@current_time-@start_time).abs() > @timeout) then      # start game
 						puts "service: starting game"
 						@game_in_progress = true                                # set game_in_progress
 						@game_timer_on = false                                  # turn timer off
 					end #if
-				elsif (player_check) 
-					if (!@game_timer_on)
+				elsif (player_check) then
+					if (!@game_timer_on) then
 						puts "service: activate game timer"
 						@game_timer_on = true                                   # activate game timer
 						@start_time = Time.now().to_i                           # set start_time
 					end #if
-					if (@new_connection)
+					if (@new_connection) then
 						puts "service: new connection & reset timer"
 						@new_connection = false                                 # reset connection status
 						@start_time = Time.now().to_i                           # reset start_time
 					end #if
-				elsif (@new_connection && @game_in_progress)                    # player joing after game is full/game started
+				elsif (@new_connection && @game_in_progress) then               # player joing after game is full/game started
 					puts "service: add player to lobby & wait for next game"
 					@new_connection = false
-				elsif (@new_connection && !@game_in_progress)                   # player joing after game is full/game started
+				elsif (@new_connection && !@game_in_progress) then              # player joing after game is full/game started
 					puts "service: (initial) new connection"
 					@new_connection = false
 				end #if
@@ -164,7 +178,7 @@ class GameServer
     #
 
     private
-    
+
     def log(msg)
         puts "log: " + msg.to_s
     end #log
@@ -175,7 +189,7 @@ class GameServer
         # the omit_sock & the serverSocket
         @descriptors.each do |client_socket|
             
-            if client_socket != @server_socket && client_socket != omit_sock
+            if client_socket != @server_socket && client_socket != omit_sock then
                 client_socket.write(msg)
 				#client_socket.flush
             end #if
@@ -202,7 +216,7 @@ class GameServer
 		p = Player.new(client_name)
 
 		# add player to player list
-		@player_list.add(p)
+		@players.add(p)
 		
 		@current_players = @current_players + 1
 		@total_players = @total_players + 1
@@ -255,7 +269,7 @@ class GameServer
         exists = false
         numId = 1
         while exists
-            #exists = @playersList.find { |n| n.getName() == name }
+            #exists = @players.find { |n| n.getName() == name }
             if exists then
                 name = name + numId.to_s
                 numId = numId + 1
@@ -268,5 +282,117 @@ class GameServer
         return name
 
     end #name_validation
+
+	#######################################################################
+
+	def players()
+		return @players.compact()
+	end
+
+	def waiting()
+		return @waiting.compact()
+	end
+
+	def min?()
+		return (players.size() >= 2)
+	end
+
+	def add_player(player)
+		if (players.size() < @max_players) then
+			#@players[position(nil)] = player unless @players.include? player
+			@players << player unless @players.include? player
+			return true
+		elsif (waiting.size() < @lobby) then
+			#@waiting[position(nil)] = player unless @waiting.include? player
+			@waiting << player unless @waiting.include? player
+			return true
+		else
+			return false
+		end
+	end
+
+	def remove_player(player)
+		@players[position(player)] = nil
+	end
+
+	def [](index)
+		return players[index]
+	end
+
+	def position(player)
+		return players.index(player)
+	end
+
+	def has_player?(player)
+		return @players.include? player
+	end
+
+	#######################################################################
+
+#	state_machine :state, :initial => :start do
+#
+#		event :deal do
+#			transition :start =>
+#
+#	end
+
+	#######################################################################
+
+	#
+	# Deal: the initial deal gives each player 7 cards
+	#
+	def deal()
+		players().each{ |player| player.cards = @deck.deal(7) }
+	end
+
+	#
+	# Reverse: reverses the play order
+	#
+	def reverse!()
+		@direction = @direction * (-1)
+		skip!(2)
+	end
+
+	#
+	# Skip: skips count players in the current play order
+	#
+	def skip!(count = 1)
+		@next += count * @direction)
+	end
+
+	#
+	# Give Card: gives player n cards
+	#
+	def give_card(player, n)
+		if has_player?(player) then
+			players()[postition(player)].cards << @deck.deal(n)
+		end
+	end
+
+	#
+	# Next Player: returns the next
+	#
+	#def next_player(player)
+	#	list_len = players().size()
+	#	# TODO: still need to make it to where @step accounts for "skips"
+	#	index = (position(player) + (@step * @direction)) % list_len
+	#	return [](index)
+	#end 
+
+	#
+	# Full Reset: create a new (shuffled) deck & clear each players hand
+	#
+	def full_reset
+		@deck = Deck.new()
+		@players.each{ |player| player.reset() }
+	end
+
+	#######################################################################
+
+	def play!()
+
+		# 
+
+	end #play!
 
 end #GameServer

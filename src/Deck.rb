@@ -4,7 +4,7 @@ require 'Card'
 
 class Deck
 
-	$cards = [
+	CARDS = [
 
 			# Regular cards (color: R,G,Y,B & number: 0-9)
 			"R0","R1","R1","R2","R2","R3","R3","R4","R4","R5","R5","R6","R6","R7","R7","R8","R8","R9","R9",
@@ -23,16 +23,27 @@ class Deck
 			"NF","NF","NF","NF",				
 	]
 
-	attr_accessor :deck, :discard_pile, :top_card
+	attr_accessor :cards, :discard_pile, :top_card
 
 	#
 	# Constructor
 	#
 
 	def initialize()
-		@deck = $cards
+
+		# playing deck
+		@cards = []
+		CARDS.each { |c|
+			prefix = c[0].chr
+			suffix = c[1].chr
+			@cards << Card.new(prefix,suffix)
+		}
+
+		# discard pile
 		@discard_pile = []
+
 		@top_card = nil
+
 		shuffle()
 	end #initialize
 
@@ -41,39 +52,54 @@ class Deck
 	#
 
 	def shuffle()
-		@deck.shuffle!()
+		@cards.shuffle!()
+		@discard_pile.unshift(@cards.pop())
 	end #shuffle
 
 	# deal 
-	def deal( num )
-
+	def deal(num)
 		if (num.kind_of? Integer)
-
 			if (num > 0 and num < 8)
 				cards = []
 				num.times{
-					cards << @deck.pop()
+					cards << @cards.delete_at(0)
 				}
 				return cards
 			end #if
-
 		end #if
-
 		return nil
 	end #deal
 
-	def discard( card )
-		if(card.kind_of? String)
-			#puts "Discarding: " + card
+	def discard(card)
+		if((card.kind_of? Card) && (card != nil))
 			@discard_pile.unshift(card)  # prepend card
 			setTopCard() 
+			#TODO: delete card from the hand of the user that discarded it
+			return
 		end #if
-
+		return nil
 	end #discard
 
 	def setTopCard()
-		@top_card = @discard_pile[0]
+		return @top_card = @discard_pile[0]
 	end #setTopCard
+
+	def empty?()
+		return @cards.empty?()
+	end
+
+	def size()
+		return @cards.size()
+	end
+
+	def to_s()
+		result = ""
+		@cards.each{ |card|
+			result << card.to_s + ","
+		}
+		result[-1] = "\n"
+		return result
+	end 
 
 	#
 	# Getters (unused so far - might not need these...)
@@ -93,7 +119,7 @@ class Deck
 
 	def showDeck()
 		puts "The Deck: "
-		@deck.each { |c|
+		@cards.each { |c|
 			puts c
 		}
 	end #showDeck

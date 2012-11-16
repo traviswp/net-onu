@@ -10,9 +10,9 @@ end #test_serverMsg
 
 def test_Card_isValid()
 
-	c = Card.new()
+	c = Card.new("R","55")
 
-	myCard = "n5"
+	myCard0 = "n5"
 	myCard1 = "G9"
 	myCard2 = "NF"
 	myCard3 = "RS"
@@ -25,18 +25,19 @@ def test_Card_isValid()
 	myCard10 = 5
 	myCard11 = false
 
-	puts c.isValid(myCard0)
-	puts c.isValid(myCard1)
-	puts c.isValid(myCard2)
-	puts c.isValid(myCard3)
-	puts c.isValid(myCard4)
-	puts c.isValid(myCard5)
-	puts c.isValid(myCard6)
-	puts c.isValid(myCard7)
-	puts c.isValid(myCard8)
-	puts c.isValid(myCard9)
-	puts c.isValid(myCard10)
-	puts c.isValid(myCard11)
+	puts c.valid_card?(c)
+	puts c.valid_str?(myCard0)
+	puts c.valid_str?(myCard1)
+	puts c.valid_str?(myCard2)
+	puts c.valid_str?(myCard3)
+	puts c.valid_str?(myCard4)
+	puts c.valid_str?(myCard5)
+	puts c.valid_str?(myCard6)
+	puts c.valid_str?(myCard7)
+	puts c.valid_str?(myCard8)
+	puts c.valid_str?(myCard9)
+	puts c.valid_str?(myCard10)
+	puts c.valid_str?(myCard11)
 
 end #test_Card_isValid()
 
@@ -45,19 +46,17 @@ def test_Deck()
 	d = Deck.new()
 
 	#initially print all the cards (should be shuffled)
-	d.deck.each { |c|
-		puts c
-	} 
-	# puts the length (should be 108)
-	puts d.deck.length()
+	puts d.to_s()
+	puts d.size()  # puts the length (should be 108)
 
 	# get 5 cards & display them
 	cards = d.deal(5)
-	cards.each { |c|
-		puts c
-	} 
-	# puts the length (should be 103)
-	puts d.deck.length()
+	puts cards.to_s
+
+	# print deck after change
+	puts d.to_s()
+	puts d.size() # puts the length (should be 103)
+
 
 	# try to get 10 cards (should return nil)
 	#cards = d.deal(10)
@@ -67,14 +66,36 @@ def test_Deck()
 
 	################################################
 
+	### SERVER DISCARD SHOULD DELETE THE DISCARDED CARD OUT OF THE PLAYERS HAND ###
+
+	d.showDiscard()
 	d.discard(cards[0])
+	cards.delete_at(0)
+
 	d.showDiscard()
-	d.discard(cards[1])
+	d.discard(cards[0])
+	cards.delete_at(0)
+
 	d.showDiscard()
-	d.discard(cards[2])
+	d.discard(cards[0])
+	cards.delete_at(0)
+
 	d.showDiscard()
+	d.discard(cards[0])
+	cards.delete_at(0)
+
+	d.showDiscard()
+	d.discard(cards[0])
+	cards.delete_at(0)
+
+	d.showDiscard()
+	d.discard(cards[0])
+	cards.delete_at(0)
+
+	d.showDiscard()
+	puts "top card:"
 	puts d.top_card
-	
+	puts cards.to_s()
 
 end #test_Deck()
 
@@ -97,9 +118,9 @@ end #test_timer
 
 if __FILE__ == $0 then
 
-test_ServerMsg()
+#test_ServerMsg()
 #test_Card_isValid()
-#test_Deck()
+test_Deck()
 #test_timer()
 
 end #if

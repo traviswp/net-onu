@@ -2,15 +2,20 @@
 
 class Player
 
+	attr_reader :name
+	attr_reader :cards
+	attr_reader :games_won
+	attr_reader :games_played
+
 	#
     # Player.new(name) : constructor for object player
 	#
 
     def initialize(name)
         @name         = name
+		@cards        = []
         @games_won    = 0
         @games_played = 0
-		@cards        = []
     end #initialize
 
 	#
@@ -20,6 +25,24 @@ class Player
     def getName()
         return @name
     end #getName
+
+	def discard(card)
+		if ((card.kind_of? Card) && (card != nil))
+			if (@cards.include?(card)) then
+				return @cards.delete_at(0)
+			end
+				return "you don't have the card: #{card}"
+		end
+		return "#{card} is not a valid card"
+	end
+
+#	def playing?()
+#		return
+#	return 
+
+#	def waiting?()
+#		return
+#	return 
 
 	def getGamesWon()
 		return @games_won
@@ -37,6 +60,10 @@ class Player
 		@games_played = @games_played + 1
 	end #setGamesPlayed
 
+	def reset()
+		@cards = []
+	end
+
 	#
 	# Game Stats & Basic Output
 	#
@@ -45,10 +72,9 @@ class Player
         stats = "After #{@games_played} games, you have won #{@games_won}.\n" 
     end #getStats
     
-    def toString()
+    def to_s()
 		str = ""
-		str += "Player: #{@name}\n"
-		str += "Cards: "
+		str += "Player: #{@name}| Cards: "
 		@cards.each{ |c|
 			str += c
 		}
