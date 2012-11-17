@@ -54,7 +54,7 @@ module ServerMsg
     def ServerMsg.message(command, info)
 
 		# initial type check
-		if !(command.kind_of? String)
+		if !(info.kind_of? Array)
 			return nil
 		end
 

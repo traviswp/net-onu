@@ -15,11 +15,11 @@ class Card
 	#
 	# A suffix consists of a valid number, action, or identifier
 	#	- valid numbers   : 0-9
-	#	- valid actions   : D (draw two), S (skip), R (reverse)
+	#	- valid actions   : D (draw two), S (skip), U (reverse)
 	#	- valid identifier: W (wild), F (wild draw four)
 	#
 	
-	SUFFIX = ["D", "S", "R", "W", "F", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"] 
+	SUFFIX = ["D", "S", "U", "W", "F", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"] 
 
 	attr_accessor :prefix, :suffix
 
@@ -86,11 +86,11 @@ class Card
 	end #eql?
 
 	def check_prefix(prefix)
-		return PREFIX.include? prefix
+		return (PREFIX.include? prefix)
 	end #check_prefix
 
 	def check_suffix(suffix)
-		return SUFFIX.include? suffix
+		return (SUFFIX.include? suffix)
 	end #check_suffix
 
 end #Card

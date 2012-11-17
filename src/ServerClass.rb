@@ -57,7 +57,8 @@ class GameServer
 		@deck = Deck.new()
 
 		# variables: game states
-		@deck
+		@state = :beforegame
+		@states = [:beforegame,:startgame,:play,:deal,:waitaction,:discard,:afterdiscard,:endgame]
 
 		@buffer           = ""
 
@@ -127,14 +128,14 @@ class GameServer
 				if (@game_in_progress && player_check) then                     # game in progress
 					puts "service: game in progress - check game state(s)"
 					# TODO: add conditional logic to check for game-end
-					#@game_in_progress = false                                   # game end: deactivate game_in_progress
-					play!()
+					@game_in_progress = false                                   # game end: deactivate game_in_progress
 				elsif (@game_timer_on) then
 					@current_time = Time.now().to_i
 					puts "timer: " + ((@current_time-@start_time).abs()).to_s
 
 					if ((@current_time-@start_time).abs() > @timeout) then      # start game
 						puts "service: starting game"
+						@state = @states[1]
 						@game_in_progress = true                                # set game_in_progress
 						@game_timer_on = false                                  # turn timer off
 					end #if
@@ -157,7 +158,29 @@ class GameServer
 					@new_connection = false
 				end #if
 				
-                
+				#
+				# Game States
+				#
+				
+				if (@state == @states[0]) # before game
+					puts "before game"
+					#beforeGame()
+				elsif (@state == @states[1]) # start game
+					startGame()
+				elsif (@state == @states[2]) # deal
+					deal()
+				elsif (@state == @states[3]) # play game
+					play()
+				elsif (@state == @states[4]) # wait for player action
+					waitForAction()
+				elsif (@state == @states[5]) # process discard
+					discard()
+				elsif (@state == @states[6]) # post-discard game handling
+					postDiscard()
+				elsif (@state == @states[7]) # end of game
+					endGame()
+				end # games states
+				
             end #while
 
         rescue Interrupt
@@ -172,9 +195,7 @@ class GameServer
     end #run
     
     #
-    #
     # private class methods
-    #
     #
 
     private
@@ -183,7 +204,7 @@ class GameServer
         puts "log: " + msg.to_s
     end #log
     
-    def broadcast(msg, omit_sock)
+    def broadcast(msg, omit_sock = nil)
         
         # Iterate over all known sockets, writing to everyone except for
         # the omit_sock & the serverSocket
@@ -286,11 +307,13 @@ class GameServer
 	#######################################################################
 
 	def players()
-		return @players.compact()
+		#return @players.compact()
+		return @players
 	end
 
 	def waiting()
-		return @waiting.compact()
+		#return @waiting.compact()
+		return @waiting
 	end
 
 	def min?()
@@ -329,12 +352,152 @@ class GameServer
 
 	#######################################################################
 
-#	state_machine :state, :initial => :start do
-#
-#		event :deal do
-#			transition :start =>
-#
-#	end
+	#
+	# Server States
+	#
+
+	def beforeGame()
+
+		# service: connections
+
+			# send: [ACCEPT|...] or [WAIT|...]
+
+			# send: [PLAYERS|...]
+
+			# parse msg & determine action
+
+		# service: chat
+
+		# (service: timer)
+
+		# service: game states
+
+	end
+
+	def startGame()
+		
+		puts "state: start game" ###DEBUG
+
+		# send [STARTGAME|...] (report all active players for game play)
+		msg = ServerMsg.message("STARTGAME",[players])
+		broadcast(msg)
+		
+		# call deal()
+		deal()
+
+		# start game play
+		play()
+
+	end 
+
+	def play()
+	
+		puts "state: play"
+
+		#loop
+
+			# send [GO|CV]
+
+			# (new state: waitForAction)
+			
+
+	end
+
+	def waitForAction()
+		puts "state: waitForAction"
+
+		# simply wait for current player to discard
+
+			# if discard: (new state: discard)
+
+			# if timeout:
+			#    - drop/skip player? (new state: postDiscard)
+
+	end
+
+	def discard(card)
+		puts "state: discard"
+
+		attempt = 0
+
+		# check if the play is valid
+		# 	1. does player have that card
+		# 	2. is card valid/playable?
+		#
+		# call: cardValidation(card)
+
+		# determine card type & appropriate action to take:
+
+			# valid number card
+
+			# skip
+
+			# reverse
+
+			# draw 2
+
+				# wild
+
+			# draw 4
+
+				# wild
+
+			# wild
+
+			# can't play (draw 1 card - if still can't play, skip player)
+
+				# if attempt == 0 then 
+				#     draw(1)
+				#     attempt = 1
+				# else 
+				#     
+
+		# if valid play: (new state: afterDiscard())
+
+	end
+
+	def afterDiscard()
+		puts "state: afterDiscard"
+
+		# send [PLAYED|playername,CV]
+
+		# check: [UNO|playername]
+
+		# 
+		# check: endGame (new state: endGame)
+		# or
+		# (new state: play)
+		#
+
+	end
+
+	def endGame()
+		puts "state: endGame"
+
+		# send [GG|winning_player_name]
+	end
+
+	#######################################################################
+
+	#
+	# Server State Helper Methods
+	#
+
+	def draw(n)
+		# send [DEAL|cards(1..n)] 
+	end
+
+	def cardValidation(card)
+		# send [INVALID|message]
+	end
+
+	def getCurrentPlayer()
+	
+	end
+
+	def getCurrentPlayerHand()
+
+	end
 
 	#######################################################################
 
@@ -342,6 +505,7 @@ class GameServer
 	# Deal: the initial deal gives each player 7 cards
 	#
 	def deal()
+		# send [DEAL|...] (initial deal: everyone gets 7 cards)
 		players().each{ |player| player.cards = @deck.deal(7) }
 	end
 
@@ -357,7 +521,7 @@ class GameServer
 	# Skip: skips count players in the current play order
 	#
 	def skip!(count = 1)
-		@next += count * @direction)
+		@next += (count * @direction)
 	end
 
 	#
@@ -389,10 +553,5 @@ class GameServer
 
 	#######################################################################
 
-	def play!()
-
-		# 
-
-	end #play!
 
 end #GameServer

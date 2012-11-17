@@ -3,6 +3,10 @@
 require 'Card'
 require 'Deck'
 require 'time'
+require 'PlayerList'
+require 'ServerMsg'
+
+include ServerMsg
 
 def test_serverMsg()
 
@@ -116,11 +120,36 @@ def test_timer()
 
 end #test_timer
 
+def test_players()
+	players = PlayerQueue.new()
+	p1 = Player.new("travis")
+	p2 = Player.new("test-player1")
+	p3 = Player.new("test-player2")
+	
+	#puts "players: " + players.to_s()
+	
+	players.add(p1)
+	players.add(p2)
+	players.add(p3)
+
+	#puts players
+
+	#puts "players: " + players.to_s().to_a.join("|")
+
+	#puts ([players].kind_of? Array)
+	puts "[" + players.to_s + "]"
+
+	puts ServerMsg.message("STARTGAME", players.getPlayers)
+
+end
+
+
 if __FILE__ == $0 then
 
 #test_ServerMsg()
 #test_Card_isValid()
-test_Deck()
+#test_Deck()
 #test_timer()
+test_players()
 
 end #if

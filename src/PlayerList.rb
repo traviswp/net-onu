@@ -8,16 +8,21 @@ class PlayerQueue
     # Public constructor
     #
     def initialize()
-        @player_queue = Array.new
-		@number_of_players = 0
+        @player_list = Array.new()
+		#@number_of_players = 0
     end
     
 	#
 	# Accessor for number of players in player queue
 	#
-	def getNumPlayers()
-		return @number_of_players
-	end #getNumPlayers
+	def getSize()
+		return @player_list.size()
+	end # getSize
+	
+	def getPlayers()
+		return @player_list
+	end # getPlayers
+	
 	
     #
     # Add the specified player to the player_queue
@@ -29,11 +34,12 @@ class PlayerQueue
             
             #TODO: only add unique players (name modifier)
 
-            @player_queue.push(player)
-            @number_of_players = @number_of_players + 1
+            @player_list.push(player)
+            #@number_of_players = @number_of_players + 1
         else
             puts "You cannot add a non-player to the Player Queue"
         end
+		@player_list = @player_list.compact()
     end
     
     #
@@ -45,15 +51,30 @@ class PlayerQueue
     def remove(player)
     
         if player.kind_of?(Player)
-            rp = @player_queue.find { |aPlayer| aPlayer.getName == player.getName }
+            rp = @player_list.find { |p| p.getName() == player.getName() }
             if rp != nil then
-                @player_queue.delete(rp)
-                @number_of_players = @number_of_players - 1
+                @player_list.delete(rp)
+                #@number_of_players = @number_of_players - 1
             end #if             
         end
+		@player_list = @player_list.compact()
     
     end
     
+	#
+	# To String: a string of all player names in the player list
+	#
+	def to_s
+		str = ""
+		if (!@player_list.empty?) then
+			@player_list.each{ |player|
+				str += player.getName() + ","
+			}
+			str[-1] = ''
+		end
+		return str
+	end
+	
     #
     # Display a list of all of the players that are connected
     #
@@ -62,8 +83,8 @@ class PlayerQueue
         puts "-----------------------------------------"
         puts "Players connected:"
         
-        if (@player_queue.length != 0)
-            @player_queue.each { |player| puts player.getName() }
+        if (@player_list.length != 0)
+            @player_list.each { |player| puts player.getName() }
         else
             puts "no players connected..."
         end

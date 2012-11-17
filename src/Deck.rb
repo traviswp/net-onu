@@ -12,11 +12,11 @@ class Deck
 			"Y0","Y1","Y1","Y2","Y2","Y3","Y3","Y4","Y4","Y5","Y5","Y6","Y6","Y7","Y7","Y8","Y8","Y9","Y9",
 			"B0","B1","B1","B2","B2","B3","B3","B4","B4","B5","B5","B6","B6","B7","B7","B8","B8","B9","B9",
 
-			# Action cards (color: R,G,Y,B & action: D (draw), S (skip), R (reverse)
-			"RD","RD","RS","RS","RR","RR",
-			"GD","GD","GS","GS","GR","GR",
-			"YD","YD","YS","YS","YR","YR",
-			"BD","BD","BS","BS","BR","BR",
+			# Action cards (color: R,G,Y,B & action: D (draw two), S (skip), U (reverse)
+			"RD","RD","RS","RS","RU","RU",
+			"GD","GD","GS","GS","GU","GU",
+			"YD","YD","YS","YS","YU","YU",
+			"BD","BD","BS","BS","BU","BU",
 
 			# Wild cards (four regular wilds & four wild draw-fours)
 			"NW","NW","NW","NW",
@@ -52,9 +52,17 @@ class Deck
 	#
 
 	def shuffle()
-		@cards.shuffle!()
+		#@cards.shuffle!() # not supported in 1.8.6?
+		@cards = @cards.sort_by{ rand }
 		@discard_pile.unshift(@cards.pop())
 	end #shuffle
+
+	def replenish!()
+		if (size() == 0) then
+			@cards = @discard_pile
+			shuffle()
+		end
+	end #replenish
 
 	# deal 
 	def deal(num)

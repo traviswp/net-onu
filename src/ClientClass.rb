@@ -8,9 +8,7 @@ include ClientMsg
 class GameClient
 
     #
-    #
     # public class methods
-    #
     #
     
     public
@@ -87,9 +85,7 @@ class GameClient
     end #run
 
     #
-    #
     # private class methods
-    #
     #
     
     private
@@ -105,6 +101,8 @@ class GameClient
     def read()
 	
 		msg = @clientSocket.gets()
+
+		#buffer the msg 
 
         if msg == nil then
             dropped_connection()
@@ -132,8 +130,7 @@ class GameClient
 
     def connect()
 
-        begin 
-
+        begin # error handling block
             @clientSocket = TCPSocket.new(@hostname, @port)
             #@running = true
             @descriptors.push(@clientSocket)         
@@ -145,12 +142,12 @@ class GameClient
             return 0
 
         rescue Errno::ECONNREFUSED
+			# server isn't up
             puts "connection refused: could not connect to #{@hostname} on port #{@port}."
             exit 0
         rescue SystemExit => e
             # On a system exit, exit gracefully
-
-        end #begin
+        end # error handling block
 
     end #connect
 
