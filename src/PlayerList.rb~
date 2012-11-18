@@ -34,10 +34,10 @@ class PlayerList
 	def getSocketFromPlayer(player)
 
 		if player.kind_of?(Player)
-			rp = @player_list.find { |p| p.socket == player.socket }
+			p = @player_list.find { |p| p.socket == player.socket }
 
-			if rp != nil then
-				return rp.socket
+			if p != nil then
+				return p.socket
 			end
 		else 
 			puts "sorry, can't get socket from non-player"

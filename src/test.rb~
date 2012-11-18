@@ -132,7 +132,7 @@ def test_players()
 	players.add(p2)
 	players.add(p3)
 
-	puts players
+	#puts players
 
 	#puts "players: " + players.to_s().to_a.join("|")
 

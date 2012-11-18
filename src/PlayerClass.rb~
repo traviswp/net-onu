@@ -3,7 +3,6 @@
 class Player
 
 	attr_reader :name
-	attr_reader :socket
 	attr_reader :cards
 	attr_reader :games_won
 	attr_reader :games_played

@@ -108,7 +108,7 @@ class GameServer
                             else #chat
 								#TODO: might have to start buffering what I'm reading....could be losing messages
 								data = socket.gets()
-								@message_queues[socket] << data   ## rather than writing here, could buffer, add to writeDescriptors
+								@message_queues[socket].put(data) ## rather than writing here, could buffer, add to writeDescriptors
 								socket.flush                      ## and process things that way...now everyone has their own buffer!
                                 msg = "[#{socket.peeraddr[2]}|#{socket.peeraddr[1]}]:#{data}"
                                 broadcast(msg, socket)
