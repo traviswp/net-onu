@@ -97,29 +97,12 @@ class PlayerList
 		str = ""
 		if (!@player_list.empty?) then
 			@player_list.each{ |player|
-				str += player.getName() + ","
+				str += "#{player.getName()}:[#{player.to_s}]"
+				str += "\n"
 			}
 			str[-1] = ''
 		end
 		return str
 	end
-	
-    #
-    # Display a list of all of the players that are connected
-    #
-    def show()
-
-        puts "-----------------------------------------"
-        puts "Players connected:"
-        
-        if (@player_list.length != 0)
-            @player_list.each { |player| puts player.getName() }
-        else
-            puts "no players connected..."
-        end
-        
-        puts "-----------------------------------------"
-
-    end
     
 end

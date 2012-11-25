@@ -45,6 +45,7 @@ class Deck
 		@top_card = nil
 
 		shuffle()
+
 	end #initialize
 
 	#
@@ -55,11 +56,14 @@ class Deck
 		#@cards.shuffle!() # not supported in 1.8.6?
 		@cards = @cards.sort_by{ rand }
 		@discard_pile.unshift(@cards.pop())
+		setTopCard()
+		badTop!()
 	end #shuffle
 
 	def replenish!()
-		if (size() == 0) then
+		if (size() < n) then
 			@cards = @discard_pile
+			@discard_pile = []
 			shuffle()
 		end
 	end #replenish
@@ -82,7 +86,6 @@ class Deck
 		if((card.kind_of? Card) && (card != nil))
 			@discard_pile.unshift(card)  # prepend card
 			setTopCard() 
-			#TODO: delete card from the hand of the user that discarded it
 			return
 		end #if
 		return nil
@@ -91,6 +94,14 @@ class Deck
 	def setTopCard()
 		return @top_card = @discard_pile[0]
 	end #setTopCard
+
+	def	badTop!()
+		while ((@top_card.to_s == "NF") || (@top_card.to_s == "NW")) do
+			@discard_pile.unshift(@cards.pop())
+			setTopCard()
+		end
+		return
+	end
 
 	def empty?()
 		return @cards.empty?()

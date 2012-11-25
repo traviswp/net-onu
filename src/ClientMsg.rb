@@ -18,6 +18,10 @@ module ClientMsg
     @keys                  = @valid_client_commands.keys()
     @default               = "unknown command"
 
+	def ClientMsg.include?(cmd)
+		return @commands.include?(cmd)
+	end
+
     #
     # message(command, info)
     #
@@ -62,9 +66,9 @@ module ClientMsg
             # broadcasted by the server with the sender name at the beginning of 
             # the message.
             #    
-            #chat = "[chat|~MESSAGE~]"
+            #chat = "[chat|MESSAGE]"
             #
-            chat = "[CHAT|~#{args}~]"
+            chat = "[CHAT|#{args}]"
             
             #
             # This message is sent to the server from the client telling the server 
@@ -100,9 +104,9 @@ module ClientMsg
             when @commands[0]         # join message 
                 msg = chat
             when @commands[1]         # play message
-                msg = play
-            when @commands[2]         # chat message
                 msg = join
+            when @commands[2]         # chat message
+                msg = play
             end #case
     
             return msg + "\n"

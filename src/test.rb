@@ -5,6 +5,7 @@ require 'Deck'
 require 'time'
 require 'PlayerList'
 require 'ServerMsg'
+require 'ClientMsg'
 
 include ServerMsg
 
@@ -122,9 +123,9 @@ end #test_timer
 
 def test_players()
 	players = PlayerList.new()
-	p1 = Player.new("travis")
-	p2 = Player.new("test-player1")
-	p3 = Player.new("test-player2")
+	p1 = Player.new("travis",0)
+	p2 = Player.new("test-player1",1)
+	p3 = Player.new("test-player2",2)
 	
 	#puts "players: " + players.to_s()
 	
@@ -141,9 +142,87 @@ def test_players()
 
 	#puts ServerMsg.message("STARTGAME", players.getPlayers)
 
-	players.
+end
+
+def validate()
+
+	print validation("[|]")
+	puts
+	print validation("[JOIN|travis]")
+	puts
+	print validation("[CHAT|hey travis, this is a test message!]")
+	puts
+	print validation("[play|R6]")
+	puts
+	print validation("[play|Y99]")
+	puts
+	print validation("[PLAY|di]")
+	puts
+	print validation("[NOPE|illegal command]")
+	puts
+	print validation("[STARTGAME|travis]")
+	puts
+	print validation("[HI|test]")
+	puts
+
 
 end
+
+def validation(cmd)
+	@players = ["travis","travis1","travis2","chat","mike"] ##TESTING
+
+    # Match (1) the command and (2) the content of the message
+#    re = /\[([a-z]{2,9})\|([\w\W]{0,128})\]/i
+    re = /\[([a-z]{4})\|([\w\W]{0,128})\]/i
+    args = cmd.match re
+
+    if args != nil then
+        command = args[1].upcase()
+        info    = args[2]
+    else
+        return nil 
+    end # if
+
+	# validate if the command is supported
+	if (!ClientMsg.include?(command)) then
+		msg = "sorry, " + command + " is not a valid command"
+		return ["INVALID", msg]
+	end
+
+	# handle supported commands
+	if command == "JOIN" then
+
+		# Modify name if it is in use already
+		numId = 1
+		tmp = info
+		while true
+		    exists = @players.find { |p| p.to_s == tmp }
+		    if exists != nil then
+		        tmp = info + numId.to_s
+		        numId = numId + 1
+		    else
+				name = tmp
+		        break
+		    end # if
+		end # while
+
+		return [command, name]
+
+	elsif command == "PLAY" then
+		#validate card
+		card = info
+		valid = Card.new().valid_str?(card)
+		if (!valid) then
+			return nil
+		end
+		return [command, card]
+	elsif command == "CHAT" then
+		# validate msg
+		msg = info
+		return [command, msg]
+	end
+
+end # name_validation
 
 
 if __FILE__ == $0 then
@@ -152,6 +231,7 @@ if __FILE__ == $0 then
 #test_Card_isValid()
 #test_Deck()
 #test_timer()
-test_players()
+#test_players()
+#validate()
 
 end #if

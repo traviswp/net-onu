@@ -11,17 +11,17 @@ module ServerMsg
     # Hash: {"command" => "arg_count"}
     #
     @commands = ["ACCEPT", "CHAT", "DEAL", "GG", "GO", "INVALID", "PLAYED", "PLAYERS", "STARTGAME", "UNO", "WAIT"]
-    @valid_server_commands = {@commands[0] => 1,            # accept
-							  @commands[1] => 2,            # chat
-                              @commands[2] => 7,            # deal
-                              @commands[3] => 1,            # gg
-                              @commands[4] => 1,            # go
-                              @commands[5] => 1,            # invalid
-                              @commands[6] => 2,            # played
-                              @commands[7] => 100,          # players
-                              @commands[8] => 100,          # startgame
-							  @commands[9] => 1,            # uno
-                              @commands[10] => 1}           # wait
+    @valid_server_commands = {@commands[0]  => 1,            # accept
+							 @commands[1]  => 2,            # chat
+							 @commands[2]  => 7,            # deal
+							 @commands[3]  => 1,            # gg
+							 @commands[4]  => 1,            # go
+							 @commands[5]  => 1,            # invalid
+							 @commands[6]  => 2,            # played
+							 @commands[7]  => 100,          # players
+							 @commands[8]  => 100,          # startgame
+							 @commands[9]  => 1,            # uno
+							 @commands[10] => 1}            # wait
                               
     @keys                  = @valid_server_commands.keys()
     @default               = "unknown command"
@@ -90,7 +90,7 @@ module ServerMsg
 			#
 			#
 			#
-			chat = "[CHAT|#{sendername},~#{args}~]"
+			chat = "[CHAT|#{sendername},#{args}]"
 
             #
             # gg = "good game" & signifies game over.

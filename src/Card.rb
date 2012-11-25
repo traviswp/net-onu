@@ -27,40 +27,60 @@ class Card
 	# Constructor
 	#
 
-	def initialize(prefix,suffix)
-		#raise ArgumentError.new("#{prefix} is an illegal card prefix") unless PREFIX.include? prefix
-		#raise ArgumentError.new("#{suffix} is an illegal card suffix") unless PREFIX.include? prefix
+	def initialize(prefix=nil,suffix=nil)
 		@prefix = prefix
 		@suffix = suffix
 	end #initialize
+
+	#
+	# Get Color: get the prefix of the card
+	#
+	def getColor()
+		return @prefix
+	end
+
+	#
+	# Get Identifier: get the suffix of the card
+	#
+	def getIdentifier()
+		return @suffix
+	end
 
 	#
 	# Validation method for determining a play is valid.
 	# Server will call this method to verify that the card 
 	# being played is valid. 
 	#
-
 	def valid_str?(card)
 
+		if (card == nil) then
+			return false
+		end
 
 		# check input 'card' - verify it is a string
 		if !(card.kind_of? String)
-			#puts "not a string"
 			return false
 		end #if
 
 		# check input 'card' length
 		len = card.length()
 		if len < 1 || len > 2
-			#puts "not the right size"
 			return false
 		end #if
  
 		# inspect the 'card' - verify prefix & suffix
 		card = card.upcase
-		#puts card
-		prefix = card[0].chr
-		suffix = card[1].chr
+		if ((card[0] != nil) && (card[1] != nil)) then
+			prefix = card[0].chr
+			suffix = card[1].chr
+		else 
+			return false
+		end
+
+		# NN = no play, which is a valid card sequence
+		if (card == "NN") then
+			return true
+		end
 
 		return (check_prefix(prefix) and check_suffix(suffix))
 
@@ -71,6 +91,11 @@ class Card
 		# check card type
 		if !(card.kind_of? Card)
 			return false
+		end
+
+		# NN = no play, which is a valid card sequence
+		if ((card.prefix == "N") && (card.suffix == "N")) then
+			return true
 		end
 
 		return ((check_prefix(card.prefix)) && (check_suffix(card.suffix)))
