@@ -19,3 +19,6 @@ drop that player from the game.
 5) error handling - server should NOT raise exceptions due to client
 
 6) add "waiting"
+
+7) add ability to connect via IP address or web address
+    - e.g. 127.0.0.1 or cf405-20.cs.wwu.edu
