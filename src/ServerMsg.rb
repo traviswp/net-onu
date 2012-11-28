@@ -26,7 +26,17 @@ module ServerMsg
     @keys                  = @valid_server_commands.keys()
     @default               = "unknown command"
     
+
+	#
+	# Legal (known) client commands
+	#
+    @client_commands = ["CHAT", "JOIN", "PLAY"]
     
+	def ServerMsg.valid?(cmd)
+		return @client_commands.include?(cmd)
+	end
+
+
     #
     # formatMessage(list)
     #
@@ -253,7 +263,7 @@ module ServerMsg
                 msg = wait
             end #case
     
-            return msg + "\n"
+            return msg #+ "\n"
 
         else # bad arg count
             return nil

@@ -3,12 +3,14 @@
 # Sockets are in the standard library
 require 'ClientClass'
 require 'Constants'
+
 include Constants
 
 # client variables
 $port       = Constants::PORT
 $hostname   = Constants::HOSTNAME
 $username   = Constants::USERNAME
+$auto       = false
 
 #
 # parse_args () -- client can redefine $port, $hostname, and $username
@@ -26,6 +28,8 @@ def parse_args()
             $hostname = ARGV[argc+1].to_s
         elsif (arg.to_s).eql?("-u")             # set the clients name
             $username = ARGV[argc+1].to_s
+		elsif (arg.to_s).eql?("-a")             # TODO: IMPLEMENT: activates automated client
+			$auto = true
         end
 
         argc+=1                                 # increment processed args        

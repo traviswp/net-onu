@@ -5,6 +5,11 @@
 #
 module ClientMsg
 
+	#
+	# Legal (recognized) server commands
+	#
+    @server_commands = ["ACCEPT", "CHAT", "DEAL", "GG", "GO", "INVALID", "PLAYED", "PLAYERS", "STARTGAME", "UNO", "WAIT"]
+
     #
     # Legal client commands
     #
@@ -17,6 +22,10 @@ module ClientMsg
                               
     @keys                  = @valid_client_commands.keys()
     @default               = "unknown command"
+
+	def ClientMsg.valid?(cmd)
+		return @server_commands.include?(cmd)
+	end
 
 	def ClientMsg.include?(cmd)
 		return @commands.include?(cmd)
@@ -109,7 +118,7 @@ module ClientMsg
                 msg = play
             end #case
     
-            return msg + "\n"
+            return msg
 
         else # bad arg count
             return nil

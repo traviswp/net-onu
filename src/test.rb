@@ -234,4 +234,20 @@ if __FILE__ == $0 then
 #test_players()
 #validate()
 
+msg = "[JOIN|TRAvIS][CHAT|hey man this is travis! how is it going?][DEAL|B7]"
+puts msg
+re = /\[([a-zA-Z]{2,9})\|(.*?)\]/i
+m = msg.match re
+
+if m != nil then
+	command = m[1].upcase()
+	info    = m[2]
+	puts command
+	puts info
+	puts info.size()
+end
+
+msg.sub!(/\[([a-zA-Z]{2,9})\|(.*?)\]/i, "")
+puts msg
+
 end #if

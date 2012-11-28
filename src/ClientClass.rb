@@ -26,12 +26,11 @@ class GameClient
 
         @clientSocket = []                      # Client socket (TCPSocket)
         @MAX_MSG_LEN  = 128                     # Max length of msg 
-        @buffer = Array.new(@MAX_MSG_LEN)
+        @buffer = ""
 
         # parameters for select
-        @descriptors  = Array.new()             # Collection of sockets
         @timeout      = 3                       # Client timeout for select call
-
+        @descriptors  = Array.new()             # Collection of sockets
         @descriptors.push(STDIN)                # Client socket (standard input)
 
 		@player       = nil
@@ -74,12 +73,23 @@ class GameClient
                         elsif socket == STDIN then
                             write()
                         else
-                            err("unknown")
+                            err("unknown socket in 'select'")
                         end #if
 
                     end #for
 
                 end #if
+
+				#
+				# Special condition: in certain circumstances, the buffer will
+				#  still have something to process, but the server has already
+				#  written it, thus, the select statement will not detect that
+				#  the buffer is not empty. This method handles any lingering
+				#  buffered messages. 
+				#
+				if (@buffer != "") then
+					buffer_clear()
+				end
 
 				#############################################################
 				#                    Service Game State(s)                  #
@@ -124,21 +134,64 @@ class GameClient
         puts "log: error: " + msg.to_s
     end #err
 
-    def read()
+	#
+	# read:
+	#
+	# Input: none
+	# Output: portion of text from @buffer that was processed (if any)
+	#
+	def read()
+
+		while(true)
+
+			# read: input on clientSocket
+			data = @clientSocket.recv(1024)
+			data.chomp!
+
+			# check: dropped/closed connection
+			if data == "" then
+				dropped_connection()
+				return nil
+			end
+
+			# update: @buffer
+			@buffer = @buffer + data
+			puts "buffer on read :[#{@buffer}]"
+
+			# validate: @buffer
+			result = validate(data)
 	
-		msg = @clientSocket.gets()
+			# check: complete message from server?
+			if result != nil then
 
-		#buffer the msg 
+				# process message
+				command = result[0].to_s
+				arguments = result[1].to_s
+				process(command, arguments)
+				break
+			end
 
-        if msg == nil then
-            dropped_connection()
-            return nil
-        else
-			process(msg)
-            return msg
-        end #if
+		end
 
-    end #read
+		return true		
+
+	end #read
+
+	def buffer_clear()
+
+		# validate: @buffer
+		result = validate(@buffer)
+
+		# check: complete message from server?
+		if result != nil then
+
+			# process message
+			command = result[0].to_s
+			arguments = result[1].to_s
+			process(command, arguments)
+		end
+
+	end
 
     def write()
 
@@ -153,7 +206,11 @@ class GameClient
 
         end
 
-		# play
+		# list who is in the game still (l)
+
+		# show current cards (s)
+
+		# play a card (p)
 		if ((msg.slice(0,1) == "p") || (msg.slice(0,1) == "P")) then
 
 			card = msg[2...-1].upcase
@@ -219,6 +276,96 @@ class GameClient
         @descriptors.delete(@clientSocket)
     end #dropped_connection
 
+	#
+	# Parse String:
+	#
+	# Input : comma delimited string of arguments
+	# Output: array of arguments
+	#
+	def parse_str(str)
+		return str.split(',')
+	end
+
+
+	#
+	# validate:
+	#
+	# Input: none
+	# Output: return array containing: (1) command, and (2) arguments
+	#
+	def validate(data)
+
+		######################################
+		# validating contents of the @buffer #
+		######################################
+
+		# match:
+		#    command   (letters only; 2-9 characters)
+		#    arguments (anything up to the first ']' character)
+		re = /\[([a-zA-Z]{2,9})\|(.*?)\]/i
+		m = @buffer.match re
+
+		puts "buffer matched #{@buffer}"
+		#puts m
+
+		# upon matching: (1) set command, (2) set command info, and (3) remove
+		#  this portion of the message from @buffer
+		if m != nil then
+			command = m[1].upcase()
+			info    = m[2]
+			@buffer.sub!(/\[([a-zA-Z]{2,9})\|(.*?)\]/i, "")
+		else
+			puts "received #{data}" #DEBUG
+			return nil
+		end
+
+		puts "updated buffer: [#{@buffer}]"
+
+		# validate: command
+		if !(ClientMsg.valid?(command)) then
+			# command not recognized
+			return nil
+		end
+
+'''
+		if (command == "ACCEPT") then
+			pass = true
+		elsif (command == "CHAT") then
+			pass = true
+		elsif (command == "DEAL") then
+			pass = true
+		elsif (command == "GG") then
+			pass = true
+		elsif (command == "GO") then
+			pass = true
+		elsif (command == "INVALID") then
+			pass = true
+		elsif (command == "PLAYED") then
+			pass = true
+		elsif (command == "PLAYERS") then
+			pass = true
+		elsif (command == "STARTGAME") then
+			pass = true
+		elsif (command == "UNO") then
+			pass = true
+		elsif (command == "WAIT") then
+			pass = true
+		else
+			# command not recognized
+			return nil
+		end
+'''
+
+		#validate: info following command
+		if (info.size() < 1 || info.size() > 128) then
+			err("message error: message with command '#{command}' and content '#{info}' violates message length constraints") #DEBUG
+			return nil
+		end	
+
+		return [command,info]
+
+	end
+
     ######################################################################
 	#                                                                    #
     #                           client states                            #
@@ -248,47 +395,48 @@ class GameClient
 	#                                                                    #
     ######################################################################
 
-	def process(message)
+	#
+	# process:
+	#
+	# Input: a legal UNO command & its arguments (validated in method 'validate')
+	# Output: none - makes appropriate call to handler method
+	#
+	def process(command, args)
 
-		# Match (1) the command and (2) the content of the message
-	    re = /\[([a-z]{2,9})\|([\w\W]{0,128})\]/i
-		args = message.match re
+		# check: nil/empty entries are illegal
+		if (command == nil || command == "" || args == nil || args == "") then
+			raise "illegal call to 'process()': command & arguments are nil"
+		end
 
-		# Separate arguments if args is not nil 
-		if args != nil then
-		    command = args[1]
-		    info    = args[2]
-		else
-		    return nil 
-		end # if
-
+		#
 		# call appropriate handler method based on command:
+		#
 
 		if (command == "ACCEPT") then
-			handle_accept(info)
+			handle_accept(args)
 		elsif (command == "CHAT") then
-			handle_chat(info)
+			handle_chat(args)
 		elsif (command == "DEAL") then
-			handle_deal(info)
+			handle_deal(args)
 		elsif (command == "GG") then
-			handle_gg(info)
+			handle_gg(args)
 		elsif (command == "GO") then
-			handle_go(info)
+			handle_go(args)
 		elsif (command == "INVALID") then
-			handle_invalid(info)
+			handle_invalid(args)
 		elsif (command == "PLAYED") then
-			handle_played(info)
+			handle_played(args)
 		elsif (command == "PLAYERS") then
-			handle_players(info)
+			handle_players(args)
 		elsif (command == "STARTGAME") then
-			handle_startgame(info)
+			handle_startgame(args)
 		elsif (command == "UNO") then
-			handle_uno(info)
+			handle_uno(args)
 		elsif (command == "WAIT") then
-			handle_wait(info)
+			handle_wait(args)
 		else
 			# error - shouldn't get invalid messages from the server
-			err(message)
+			err("error in method 'process'. unrecognized command '#{command}'")
 		end
 
 	end
@@ -324,7 +472,7 @@ class GameClient
 	# parse string of card(s) & add to player hand
 	#
 	def handle_deal(msg)
-        log("read: deal: " + msg) # DEBUG
+        log("read: dealt: [#{msg}]") # DEBUG
 
 		# parse string of cards
 		list = parse_str(msg)
@@ -480,20 +628,6 @@ class GameClient
 			return false
 		end
 
-	end
-
-	#
-	# Parse String:
-	#
-	# Input : comma delimited string of arguments
-	# Output: array of arguments
-	#
-	def parse_str(str)
-		return str.split(',')
-	end
-
-	def parse_message()
-		#TODO: Implement ?
 	end
 
 end #GameClient

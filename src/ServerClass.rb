@@ -60,6 +60,7 @@ class GameServer
 		############################ DEBUG ############################
 		@player_timer     = false                         # Boolean represents if player turn is active (go command has been issued)
 		@player_time      = 20                            # Default player response time
+		@player_strikes   = 3
 		############################ DEBUG ############################
 
 		# variables: deck/card management
@@ -102,14 +103,21 @@ class GameServer
 
                         else # ClientSocket: Read
 
+							# check: closed connection
                             if socket.eof? then
 								close_connection(socket)
-                            else #chat
-								process(socket)
+							# check: process incoming client messages
+                            else
+								read(socket)
                             end #if
 
                         end #if
-                    
+               
+						# I don't know how I feel about this...
+						#if @new_connection then
+						#	read(socket)
+						#end
+     
                     end #for            
 
                 end #if
@@ -118,8 +126,8 @@ class GameServer
 				#                  Pre-Service Game State(s)                #
 				#############################################################
 				
-				debug = "# Players: " + @players.getSize().to_s
-				puts debug
+				puts "\n-------------------------------------------------"
+				puts "#{@players.to_s}"
 
 #				puts "Game Timer On: " + @game_timer_on.to_s
 #				puts "Game In Progress: " + @game_in_progress.to_s				
@@ -138,11 +146,11 @@ class GameServer
 				if (game_in_progress) then
 					if (!player_check) then
 						@state = @states[0]
-						msg = "sorry, game quit due to insufficient players. waiting for more players to join...\n"
+						msg = "sorry, game quit due to insufficient players. waiting for more players to join..." #\n"
 						log (msg)
 						broadcast(msg, nil)
 					else
-						log("service: game in progress - check game state(s)")
+						#log("service: game in progress - check game state(s)")
 					end
 					if (@new_connection) then 
 						log("service: game in progress - add player to lobby & wait for next game")
@@ -184,7 +192,7 @@ class GameServer
 				#       - ...?
 				
 				if (@state == @states[0]) then # before game
-					puts "before game"
+					#puts "before game"
 					#beforeGame()
 				elsif (@state == @states[1]) then # start game
 					startGame()
@@ -220,11 +228,11 @@ class GameServer
     private
 
     def log(msg)
-        puts "log: " + msg.to_s
+        puts "log: " + msg.to_s + "\n"
     end # log
 	
 	def err(msg)
-		log ("error: " + msg.to_s)
+		log ("error: " + msg.to_s + "\n")
 	end # err
     
 	#
@@ -275,74 +283,31 @@ class GameServer
                     
     end #broadcast
     
+
+	#########################################################################
+
     def accept_new_connection()
         
         # Accept connect
         new_socket = @server_socket.accept
 
-        # Get Request
-        args = new_socket.gets()
+		# Add new socket to descriptors
+		@descriptors.push(new_socket)
 
-        ########################################
-		# Validation
-        result = name_validation(args)
-        ########################################
-		
-		puts result.size() 
-		puts result[0]
-		if (result.size() == 1) then
+		# Create a queue for each connection
+		@message_queues[new_socket] = ""
 
-			# Add new socket to descriptors
-			@descriptors.push(new_socket)
-
-			# Create a queue for each connection
-			@message_queues[new_socket] = []
-
-			# Create Player object & add to player list
-			name = result[0]
-			p = Player.new(name, new_socket)
-			@players.add(p)
-
-			# Update player counts
-			@total_players = @total_players + 1
-
-			# Inform player of acceptance
-		    msg = ServerMsg.message("ACCEPT",[name])		  
-			send(msg, new_socket)
-		    #new_socket.write(msg) ### old way..
-
-		    # Broadcast 
-		    #msg = "Client joined #{new_socket.peeraddr[2]}:#{new_socket.peeraddr[1]}\n"
-			#msg = "#{name} has joined\n"
-			msg = ServerMsg.message("PLAYERS", @players.list())
-			broadcast(msg, new_socket)
-
-		else
-
-			# invalid join request: drop connection
-			command = result[0] # invalid
-			message = result[1] # details
-			msg = ServerMsg.message(command, [message])
-			log(msg)
-			send(msg, new_socket)
-			new_socket.close()
-
-		end
+		read(new_socket)
 
     end # accept_new_connection
     
-	def close_connection(socket) 
+	#########################################################################
 
-		# announce player leaving
-		msg = "Client left #{socket.peeraddr[2]}:#{socket.peeraddr[1]}\n"
-		broadcast(msg, socket)
-
-		# handle descriptors
-		socket.close()
-		@descriptors.delete(socket)
+	def remove_player(socket)
 
 		# remove player
 		player = @players.getPlayerFromSocket(socket)
+
 		# TODO: put cards back in deck
 		@players.remove(player)
 		# TODO: delete player object?
@@ -350,164 +315,233 @@ class GameServer
 		# update game/lobby count
 		@total_players = @total_players - 1
 
+	end
+
+	def close_connection(socket) 
+
+		# announce player leaving
+		msg = "Client left #{socket.peeraddr[2]}:#{socket.peeraddr[1]}" #\n"
+		broadcast(msg, socket)
+
+		# handle descriptors
+		socket.close()
+		@descriptors.delete(socket)
+		
+		remove_player(socket)
+
 	end # close_connection
 	
-	def process(socket)
+	def read(socket)
+
+		while(true)
+
+			# read: input on clientSocket
+
+			# TODO: handle new lines?
+			begin
+				data = socket.read(1)
+				#socket.flush()
+				#msg = data.chomp!
+			rescue Exception => e
+	            print e.backtrace
+				exit(0)
+				return nil
+			end
+
+			if data == nil then
+				puts "why nil?"
+				exit(0)
+				return nil
+			end
+
+			# check: dropped/closed connection
+			if data == "" then
+				puts "dropped"
+				#dropped_connection()
+				return nil
+			end
+
+			# update: @message_queues[socket]
+			@message_queues[socket] = @message_queues[socket] + data
+			p = @players.getPlayerFromSocket(socket)                          ###DEBUG
+			if p != nil then
+				puts "#{p.getName()}'s buffer on read:[#{@message_queues[socket]}]" ##DEBUG
+			end
+
+			# validate: @message_queues[socket]
+			result = validate(data, socket) #@message_queues[socket]
 	
-		#TODO: might have to start buffering what I'm reading....could be losing messages
-		data = socket.gets().chomp
-		@message_queues[socket] << data   ## rather than writing here, could buffer, add to writeDescriptors
-		socket.flush                      ## and process things that way...now everyone has their own buffer!
+			# check: complete message from server?
+			if result == nil then          # invalid command/argument(s)
+				# do nothing
+			elsif result[0] == "drop" then # valid command, empty contents (drop)
+				break
+			elsif result != nil then       # valid command with valid argument(s)
 
-		# process data & determine appropriate action
-		##############################################
-		result = validation(data) #process_command(data) ### FIX: should be passing in @message_queues[socket]
-		##############################################
+				# process message
+				command = result[0].to_s
+				arguments = result[1].to_s
+				process(command, arguments, socket)
+				break
+			end
 
-		if (result == nil) then
-			msg = ServerMsg.message("INVALID", ["#{data} is not a valid action"])
-			send(msg, socket)
+			#break		
+		
+		end
+
+		return true
+
+	end #read
+
+	def process(command, args, socket)
+	
+		if (command == "CHAT") then
+			handle_chat(args, socket)
+		elsif (command == "JOIN") then
+			handle_join(args, socket)
+		elsif (command == "PLAY") then
+			handle_play(args, socket)
+		else
+			# error - shouldn't get invalid messages from the server
+			err("error in method 'process'. unrecognized command '#{command}'")
+		end
+
+	end
+
+	def handle_chat(message, socket)
+		playerName = @players.getPlayerFromSocket(socket).getName()
+		msg = ServerMsg.message("CHAT", [playerName, message])
+		broadcast(msg, socket)
+	end
+
+	def handle_join(name, socket) ###### ************
+
+        ########################################
+		# Validation
+        result = name_validation(name)
+        ########################################
+		puts result
+		# invalid join
+		if result == nil then
 			return
 		end
 
-		cmd = result[0]
-		info = result[1]
+		if (result.size() == 1) then
 
-		if (cmd == :chat) then # chat
-			#msg = "[#{socket.peeraddr[2]}|#{socket.peeraddr[1]}]:#{data}"
-			player = @players.getPlayerFromSocket(socket).getName()
-			msg = ServerMsg.message("CHAT", [player, info])
-			broadcast(msg, socket)
-		elsif (cmd == :play) then # play
-			# handle play validation...
+			# Create Player object & add to player list
+			name = result[0]
+			p = Player.new(name, socket)
+			@players.add(p)
 
-			@playerPlayed = @players.getPlayerFromSocket(socket)         # type: Player
-			@card = Card.new(info[0].chr.upcase(),info[1].chr.upcase())  # type: Card
+			# Update player counts
+			@total_players = @total_players + 1
 
-			#player = @players.getPlayerFromSocket(socket).getName()
-			#msg = ServerMsg.message("PLAYED", [player, info])
-			#broadcast(msg, socket)
-		elsif (cmd == :invalid) then # invalid
-			msg = ServerMsg.message("INVALID", [info])
+			# Inform player of acceptance
+		    msg = ServerMsg.message("ACCEPT",[name])		  
 			send(msg, socket)
-		else
-			err("unknown: " + data.to_s)
-		end
+		   
+		    # Broadcast updated player list to all players
+			msg = ServerMsg.message("PLAYERS", @players.list())
+			broadcast(msg, nil)
 
-	end #process
-	
-	def validation(cmd)
+		else
+
+			# invalid join request: drop connection
+			message = result[1] # details
+			handle_invalid(message, socket)
+			log(message)
+			socket.close()
+
+		end
+	end
+
+	def handle_play(card, socket)
+		# play validation handled in game states - set player & card...
+
+		@playerPlayed = @players.getPlayerFromSocket(socket)          # type: Player
+		@card = Card.new(card[0].chr.upcase(), card[1].chr.upcase())  # type: Card
+	end
+
+	def handle_invalid(message, socket)
+		msg = ServerMsg.message("INVALID", [message])
+		send(msg, socket)
+	end
+
+	def validate(data, socket)
 		
-		# Match (1) the command and (2) the content of the message
-	#    re = /\[([a-z]{2,9})\|([\w\W]{0,128})\]/i
-		re = /\[([a-z]{4})\|([\w\W]{0,128})\]/i
-		args = cmd.match re
+		######################################################
+		# validating contents of the @message_queues[socket] #
+		######################################################
 
-		# Separate arguments if args is not nil 
-		if args != nil then
-		    command = args[1].upcase()
-		    info    = args[2]
+		# match:
+		#    command   (letters only; 2-9 characters)
+		#    arguments (anything up to the first ']' character)
+		re = /\[([a-zA-Z]{2,9})\|(.*?)\]/i
+		m = @message_queues[socket].match re
+
+		# upon matching: (1) set command, (2) set command info, and (3) remove
+		#  this portion of the message from @buffer
+		if m != nil then
+			command = m[1].upcase()
+			info    = m[2]
+			@message_queues[socket].sub!(/\[([a-zA-Z]{2,9})\|(.*?)\]/i, "")
 		else
-		    return nil 
-		end # if
+			#puts "received #{data}" #DEBUG
+			return nil
+		end
 
+		# check: remove new line characters
+		info.gsub!(/\\n/,"")
+
+		#
 		# validate command 
-		if command == "JOIN" then
-			msg = "sorry, '" + command + "' is not a valid command at this time, you have already joined the game."
-			return [:invalid, msg]
-		elsif (!(command == "CHAT") && !(command == "PLAY") ) then
-			msg = "sorry, " + command + " is not a valid command. valid client commands after connecting are: 'CHAT' & 'PLAY'."
-			return [:invalid, msg]
+		#
+
+		if !(ServerMsg.valid?(command)) then
+			return nil
 		end
 
-		# handle supported commands
-		if command == "PLAY" then
-			#validate card
-			card = info.upcase()
-			result = Card.new().valid_str?(card)
-			if (!result) then
-				msg = "sorry, '" + card + "' is an invalid card. please see the UNO specification for proper card syntax."	
-				return [:invalid, msg]
-			end
-			return [:play, card]
-		elsif command == "CHAT" then
-			msg = info
-			return [:chat, msg]
+		#validate: info following command
+		if (info.size() < 1) then
+			return ["drop"] # just drop empty commands
+		elsif (info.size() > 128) then
+			msg = "message error: [#{command}|#{info}] violates max message length constraint (128 characters)" #DEBUG
+			handle_invalid(msg, socket)
+			err(msg)
+			return nil
+		end	
 
-			# validate msg
-			#result = message_validation(info)
-			#if (result.size() == 1) then
-			#	msg = result[0]
-			#	return [:chat, msg]
-			#else
-			#	command = result[0]
-			#	msg = result[1]
-			#	return [command, msg]
-			#end 
-		end
+		return [command,info]
 
 	end # validation
-
-	def message_validation(msg)
-
-		# TODO: implement
-
-		# check length
-		#  - too long?
-		#  - is it a 'complete' message?
-
-		# adjust appropriate player's buffer
-
-	end # message_validation
 
     #
     # Input : string name
     # Return: string name
     #    + If the name is already in existence, modify the name and return it
     #    
-    def name_validation(cmd)
+    def name_validation(name)
 
-		if (cmd == nil) then 
-			msg = "sorry, you did not send a valid 'JOIN' request - on connect send: '[JOIN|player-name]'."
+		if (name == "") then 
+			msg = "sorry, you must provide a valid name for the 'JOIN' request - on connect send: '[JOIN|player-name]'."
 			return ["INVALID", msg]		
 		end 
 
-		# Match (1) the command and (2) the content of the message
-		re = /\[([a-z]{4})\|([\w\W]{0,128})\]/i
-		args = cmd.match re
+		# Modify name if it is in use already
+		numId = 1
+		tmp = name
+		while true
+			exists = @players.getList().find { |p| p.getName == tmp }
+			if exists != nil then
+				tmp = name + numId.to_s
+				numId = numId + 1
+			else
+				name = tmp
+				break
+			end # if
+		end # while
 
-		# Separate arguments if args is not nil 
-		if args != nil then
-		    command = args[1].upcase()
-		    info    = args[2]
-		else
-			msg = "sorry, you did not send a valid 'JOIN' request - on connect send: '[JOIN|player-name]'."
-			return ["INVALID", msg]
-		end # if
-
-		# validate if the command is supported
-		if (command == "JOIN") then
-
-			# Modify name if it is in use already
-			numId = 1
-			tmp = info
-			while true
-				exists = @players.getList().find { |p| p.getName == tmp }
-				if exists != nil then
-					tmp = info + numId.to_s
-					numId = numId + 1
-				else
-					name = tmp
-					break
-				end # if
-			end # while
-
-			return [name]
-
-		else
-			msg = "sorry, you did not send a valid 'JOIN' request - on connect send: '[JOIN|player-name]'."
-			return ["INVALID", msg]
-		end
+		return [name]
 
     end # name_validation
 
@@ -578,10 +612,12 @@ class GameServer
 	end
 
 	def waitForAction()
-		puts "state: waitForAction" ###DEBUG
 
 		# simply wait for current player to discard
 		playerCurrent = getCurrentPlayer()
+		puts "state: waitForAction - waiting for #{playerCurrent.getName()} to play!" ###DEBUG
+
+
 		if (@playerPlayed == playerCurrent) then
 
 			# process the discard for validity
