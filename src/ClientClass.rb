@@ -36,6 +36,11 @@ class GameClient
 		@player       = nil
 		@top          = nil
 
+		# variables for game play tracking/output
+		@players_list   = []
+		@current_player = ""
+
+		# valid game states
 		@state  = :lobby
 		@states = [:lobby, :start, :wait, :play]
 
@@ -199,16 +204,25 @@ class GameClient
         msg = STDIN.gets()
 
 		# check for client disconnect command
-        if (msg.slice(0,4).eql?("quit") || msg.slice(0,4).eql?("exit")) then
-
-            log("signing off...")
+        if (msg.slice(0,4).eql?("quit") || msg.slice(0,1).eql?("q")) then
+			#TODO: this should just return to lobby - then if they exit again, drop connection            
+			log("signing off...")
             exit 0
-
         end
 
 		# list who is in the game still (l)
 
 		# show current cards (s)
+		if ((msg.slice(0,4) == "show") || (msg.slice(0,1) == "s") || (msg.slice(0,1) == "S")) then
+			show_cards()
+			return
+		end
+
+		# show current cards (s)
+		if ((msg.slice(0,4) == "help") || (msg.slice(0,1) == "h") || (msg.slice(0,1) == "H")) then
+			help_dialog()
+			return
+		end
 
 		# play a card (p)
 		if ((msg.slice(0,1) == "p") || (msg.slice(0,1) == "P")) then
@@ -326,35 +340,6 @@ class GameClient
 			# command not recognized
 			return nil
 		end
-
-'''
-		if (command == "ACCEPT") then
-			pass = true
-		elsif (command == "CHAT") then
-			pass = true
-		elsif (command == "DEAL") then
-			pass = true
-		elsif (command == "GG") then
-			pass = true
-		elsif (command == "GO") then
-			pass = true
-		elsif (command == "INVALID") then
-			pass = true
-		elsif (command == "PLAYED") then
-			pass = true
-		elsif (command == "PLAYERS") then
-			pass = true
-		elsif (command == "STARTGAME") then
-			pass = true
-		elsif (command == "UNO") then
-			pass = true
-		elsif (command == "WAIT") then
-			pass = true
-		else
-			# command not recognized
-			return nil
-		end
-'''
 
 		#validate: info following command
 		if (info.size() < 1 || info.size() > 128) then
@@ -529,8 +514,9 @@ class GameClient
 	end
 
 	def handle_startgame(msg)
-		#list = parse_str(msg)
-        log("read: starting game: players: #{msg}")
+		@players_list = parse_str(msg)
+        #log("read: starting game: players: #{list}")
+		start_game_dialog()
 		@state = :start
 	end
 
@@ -627,6 +613,48 @@ class GameClient
 			log("#{card} cannot be played on a #{t_prefix}#{t_suffix}")
 			return false
 		end
+
+	end
+
+    ######################################################################
+	#                                                                    #
+    #                    client game display methods                     #
+	#                                                                    #
+    ######################################################################
+
+	def start_game_dialog()
+		list = @players_list.join(", ")
+
+		puts ""
+		puts "-----------------------------"
+		puts "|  UNO game is beginning!   |"
+		puts "-----------------------------"
+		puts ""
+		puts "The players for this game are: #{list}"
+		puts ""
+	end
+
+	def help_dialog()
+		puts
+		puts "----------------------------------------"
+		puts "| Help Menu:                           |"
+		puts "|    'h'        show help menu         |"
+		puts "|    'p XX'     play card XX           |"
+		puts "|    'q'        quit current game      |"
+		puts "|    's'        show current cards     |"
+		puts "|                                      |"
+		puts "| NOTE: to chat, just write something! |"
+		puts "----------------------------------------"
+		puts
+	end
+	
+	def show_cards()
+		puts "----------------------------------------"
+		puts @player.to_s
+		puts "----------------------------------------"
+	end
+
+	def quit()
 
 	end
 

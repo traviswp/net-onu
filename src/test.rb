@@ -169,6 +169,25 @@ def validate()
 end
 
 def validation(cmd)
+
+	msg = "[JOIN|TRAvIS][CHAT|hey man this is travis! how is it going?][DEAL|B7]"
+	puts msg
+	re = /\[([a-zA-Z]{2,9})\|(.*?)\]/i
+	m = msg.match re
+
+	if m != nil then
+		command = m[1].upcase()
+		info    = m[2]
+		puts command
+		puts info
+		puts info.size()
+	end
+
+	msg.sub!(/\[([a-zA-Z]{2,9})\|(.*?)\]/i, "")
+	puts msg
+
+	#########################################################
+
 	@players = ["travis","travis1","travis2","chat","mike"] ##TESTING
 
     # Match (1) the command and (2) the content of the message
@@ -234,20 +253,12 @@ if __FILE__ == $0 then
 #test_players()
 #validate()
 
-msg = "[JOIN|TRAvIS][CHAT|hey man this is travis! how is it going?][DEAL|B7]"
-puts msg
-re = /\[([a-zA-Z]{2,9})\|(.*?)\]/i
-m = msg.match re
+str = "travis,jelloman,max,bart,maggie"
+puts str
+names = str.split(",")
+puts names
 
-if m != nil then
-	command = m[1].upcase()
-	info    = m[2]
-	puts command
-	puts info
-	puts info.size()
-end
-
-msg.sub!(/\[([a-zA-Z]{2,9})\|(.*?)\]/i, "")
-puts msg
+l = names.join(", ")
+puts "the players are: #{l}"
 
 end #if
