@@ -1,3 +1,7 @@
+-------------------------
+Playing Card Format:
+-------------------------
+
 Card Name | suffix | prefix   | amount      | Example
 __________|________| (one of) |_____________|_________
 Numbers   |  0-9   |   RGBY   | 1 0, 2 1-9  | R3 = Red 3
@@ -9,14 +13,13 @@ Draw 4 W  |   F    |  N,RGBY  |     4       | NF, BF = No Color Wild (4), Blue W
 
 NN represents no play
 
-Commands/Messages:
+-------------------------
+Commands/Messages Format:
+-------------------------
 
-**A COMMAND WILL BE IN ALL CAPS**
+NOTE: A COMMAND WILL BE IN ALL CAPS 
 
---ALL EXAMPLES WITH (CV) ARE REFERING TO CARD VALUE--
-
-FORMAT:
--------
+NOTE: ALL EXAMPLES WITH (CV) ARE REFERING TO CARD VALUE
 
 [OP/CMD|  ,  ,  ,  ,  ]
 
@@ -35,3 +38,21 @@ FORMAT:
 [WAIT|NAME]				S -- TELLS A PLAYER JOINING THAT A SESSION HAS BEEN STARTED WITHOUT THEM.
 					     THEY CAN "SPECTATE" (RECEIVING ALL BROADCAST MESSAGES)
 [STARTGAME|P1,P2,P3,...]
+
+-------------------------
+Command Line Arguments:
+-------------------------
+
+	Server:
+		-h     HOSTNAME
+		-p     PORT
+		-p     TIMEOUT
+		-min   NUM
+		-max   NUM
+		-lobby NUM
+
+	Client:
+		-h     HOSTNAME
+		-p     PORT
+		-t     TIMEOUT
+		-a     (automated client)
