@@ -10,7 +10,7 @@ include Constants
 $port       = Constants::PORT
 $hostname   = Constants::HOSTNAME
 $username   = Constants::USERNAME
-$auto       = false
+$auto       = Constants::AUTO
 
 #
 # parse_args () -- client can redefine $port, $hostname, and $username
@@ -49,7 +49,7 @@ if __FILE__ == $0 then
     parse_args()
 
 	# initialize UNO game client
-    unoGameClient = GameClient.new($hostname, $port, $username)
+    unoGameClient = GameClient.new($hostname, $port, $username, $auto)
 
 	# run client
     unoGameClient.run()

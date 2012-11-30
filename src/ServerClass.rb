@@ -79,7 +79,7 @@ class GameServer
     def run()
 
         begin # error handling block
-        
+count = 0        
             while true
 
 				#############################################################
@@ -126,8 +126,10 @@ class GameServer
 				#                  Pre-Service Game State(s)                #
 				#############################################################
 				
-				puts "\n-------------------------------------------------"
+				puts "\n-------------------------------------------------#{count}"
 				puts "#{@players.to_s}"
+				@deck.showDeck()
+				count = count + 1
 
 #				puts "Game Timer On: " + @game_timer_on.to_s
 #				puts "Game In Progress: " + @game_in_progress.to_s				
@@ -162,22 +164,22 @@ class GameServer
 #						puts "timer: " + ((@current_time-@start_time).abs()).to_s
 
 						if ((@current_time-@start_time).abs() > @timeout) then      # start game
-							puts "service: starting game"
+							#puts "service: starting game"
 							@state = @states[1] ############################# <<<<<<<<<< start game
 							@game_timer_on = false                                  # turn timer off
 						end #if
 					elsif (player_check) then
 						if (!@game_timer_on) then
-							puts "service: activate game timer"
+							#puts "service: activate game timer"
 							@game_timer_on = true                                   # activate game timer
 							@start_time = Time.now().to_i                           # set start_time
 						end #if
 						if (@new_connection) then
-							puts "service: new connection & reset timer"
+							#puts "service: new connection & reset timer"
 							@start_time = Time.now().to_i                           # reset start_time
 						end #if
 					elsif (@new_connection) then              # player joing after game is full/game started
-						puts "service: (initial) new connection"
+						#puts "service: (initial) new connection"
 					end #if
 
 				end
@@ -259,13 +261,7 @@ class GameServer
 			
         end
 
-        if socket != nil then
-	        log("sent #{socket.peeraddr[3]} (#{name}): " + msg)
-		else
-			err("send #{x.peeraddr[3]}: " + msg)
-		end
-
-	end # 
+	end # send
 
     def broadcast(msg, omit_sock = nil)
         
@@ -313,8 +309,10 @@ class GameServer
 		player = @players.getPlayerFromSocket(socket)
 
 		# TODO: put cards back in deck
+		cards = player.getCards()
+		@deck.put_back(cards)
+
 		@players.remove(player)
-		# TODO: delete player object?
 
 		# update game/lobby count
 		@total_players = @total_players - 1
@@ -345,7 +343,9 @@ class GameServer
 			begin
 				data = socket.read(1)
 				#socket.flush()
-				#msg = data.chomp!
+				#data.lstrip!
+				#data.rstrip!
+				data.chomp!
 			rescue Exception => e
 	            print e.backtrace
 				exit(0)
@@ -367,10 +367,10 @@ class GameServer
 
 			# update: @message_queues[socket]
 			@message_queues[socket] = @message_queues[socket] + data
-			p = @players.getPlayerFromSocket(socket)                          ###DEBUG
-			if p != nil then
-				puts "#{p.getName()}'s buffer on read:[#{@message_queues[socket]}]" ##DEBUG
-			end
+			#p = @players.getPlayerFromSocket(socket)                          ###DEBUG
+			#if p != nil then
+				#puts "#{p.getName()}'s buffer on read:[#{@message_queues[socket]}]" ##DEBUG
+			#end
 
 			# validate: @message_queues[socket]
 			result = validate(data, socket) #@message_queues[socket]
@@ -413,9 +413,11 @@ class GameServer
 	end
 
 	def handle_chat(message, socket)
-		playerName = @players.getPlayerFromSocket(socket).getName()
-		msg = ServerMsg.message("CHAT", [playerName, message])
-		broadcast(msg, socket)
+		if socket != nil then
+			playerName = @players.getPlayerFromSocket(socket).getName()
+			msg = ServerMsg.message("CHAT", [playerName, message])
+			broadcast(msg, socket)
+		end
 	end
 
 	def handle_join(name, socket) ###### ************
@@ -576,7 +578,7 @@ class GameServer
 
 	def startGame()
 		
-		puts "state: start game" ###DEBUG
+		#puts "state: start game" ###DEBUG
 
 		# send [STARTGAME|...] (report all active players for game play)
 		msg = ServerMsg.message("STARTGAME", @players.list())
@@ -592,8 +594,8 @@ class GameServer
 
 	def play()
 	
-		puts "state: play" ###DEBUG
-		puts @players.to_s
+		#puts "state: play" ###DEBUG
+		#puts @players.to_s
 
 		player = getCurrentPlayer()
 
@@ -619,7 +621,7 @@ class GameServer
 
 		# simply wait for current player to discard
 		playerCurrent = getCurrentPlayer()
-		puts "state: waitForAction - waiting for #{playerCurrent.getName()} to play!" ###DEBUG
+		#puts "state: waitForAction - waiting for #{playerCurrent.getName()} to play!" ###DEBUG
 
 
 		if (@playerPlayed == playerCurrent) then
@@ -640,7 +642,7 @@ class GameServer
 	end
 
 	def discard()
-		puts "check: discard" ###DEBUG
+		#puts "check: discard" ###DEBUG
 
 		card = Card.new()
 		cards = getCurrentPlayerHand()
@@ -781,7 +783,7 @@ class GameServer
 	end
 
 	def afterDiscard()
-		puts "state: afterDiscard" ###DEBUG
+		#puts "state: afterDiscard" ###DEBUG
 
 		# send [PLAYED|playername,CV]
 		msg = ServerMsg.message("PLAYED", [@playerPlayed.getName(),@card.to_s])
@@ -808,7 +810,7 @@ class GameServer
 	end
 
 	def endGame()
-		puts "state: endGame" ###DEBUG
+		#puts "state: endGame" ###DEBUG
 
 		# send [GG|winning_player_name]
 		msg = ServerMsg.message("GG",[@playerPlayed.getName()])

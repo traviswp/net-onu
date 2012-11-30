@@ -62,6 +62,7 @@ class Deck
 
 	def replenish!(n)
 		if (size() < n) then
+			puts "MUST REPLENISH DECK!!!"
 			@cards = @discard_pile
 			@discard_pile = []
 			shuffle()
@@ -91,13 +92,22 @@ class Deck
 	end #deal
 
 	def discard(card)
-		if((card.kind_of? Card) && (card != nil))
+		#if((card.kind_of? Card) && (card != nil))
+		if card != nil then
 			@discard_pile.unshift(card)  # prepend card
 			setTopCard() 
 			return
 		end #if
-		return nil
+		return "no put pack"
 	end #discard
+
+	def put_back(cards)
+		if (cards != nil) then 
+			cards.each { |card|
+				@discard_pile << card
+			}
+		end
+	end
 
 	def setTopCard()
 		return @top_card = @discard_pile[0]
@@ -145,17 +155,20 @@ class Deck
 	#
 
 	def showDeck()
-		puts "The Deck: "
+		l = "The Deck: "
 		@cards.each { |c|
-			puts c
+			l = l + "#{c},"
 		}
-	end #showDeck
+		l[-1] = ""
+		puts l + "#{@cards.size()}"
 
-	def showDiscard()
-		puts "The Discard Pile: "
+		l = "The Discard Pile: "
 		@discard_pile.each { |c|
-			puts c
+			l = l + "#{c},"
 		}
-	end #showDiscard
+		l[-1] = ""
+		puts l + "#{@discard_pile.size()}"
+		
+	end #showDeck
 
 end #Deck
