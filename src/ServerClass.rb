@@ -146,7 +146,7 @@ class GameServer
 				if (game_in_progress) then
 					if (!player_check) then
 						@state = @states[0]
-						msg = "sorry, game quit due to insufficient players. waiting for more players to join..." #\n"
+						msg = ServerMsg.message("GG",[""])
 						log (msg)
 						broadcast(msg, nil)
 					else
@@ -269,17 +269,21 @@ class GameServer
 
     def broadcast(msg, omit_sock = nil)
         
-        # Iterate over all known sockets, writing to everyone except for
-        # the omit_sock & the serverSocket
-        @descriptors.each do |client_socket|
-            
-            if client_socket != @server_socket && client_socket != omit_sock then
-                client_socket.write(msg)
-            end #if
-            
-        end #each
-        
-        log("broadcast: " + msg)
+		if msg != nil then
+
+		    # Iterate over all known sockets, writing to everyone except for
+		    # the omit_sock & the serverSocket
+		    @descriptors.each do |client_socket|
+		        
+		        if client_socket != @server_socket && client_socket != omit_sock then
+		            client_socket.write(msg)
+		        end #if
+		        
+		    end #each
+		    
+		    log("broadcast: " + msg)
+
+		end
                     
     end #broadcast
     
@@ -318,16 +322,16 @@ class GameServer
 	end
 
 	def close_connection(socket) 
+		
+		remove_player(socket)
 
-		# announce player leaving
-		msg = "Client left #{socket.peeraddr[2]}:#{socket.peeraddr[1]}" #\n"
-		broadcast(msg, socket)
+	    # Broadcast updated player list to all players (player left)
+		msg = ServerMsg.message("PLAYERS", @players.list())
+		broadcast(msg, socket)		#broadcast(msg, socket)
 
 		# handle descriptors
 		socket.close()
 		@descriptors.delete(socket)
-		
-		remove_player(socket)
 
 	end # close_connection
 	

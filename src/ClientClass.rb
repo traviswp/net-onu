@@ -28,6 +28,10 @@ class GameClient
         @MAX_MSG_LEN  = 128                     # Max length of msg 
         @buffer = ""
 
+		# Read/Write log file
+		filename = @clientName + "_log.txt"
+		@log = File.new(filename,"w+")
+
         # parameters for select
         @timeout      = 3                       # Client timeout for select call
         @descriptors  = Array.new()             # Collection of sockets
@@ -44,7 +48,10 @@ class GameClient
 		@state  = :lobby
 		@states = [:lobby, :start, :wait, :play]
 
-        log("Game client #{@hostname} started on port #{@port}")
+		# inform client of initial connection
+		startMsg = "Game client #{@hostname} started on port #{@port}"
+		log(startMsg)
+		puts startMsg
 
         connect()                               # Connect to server
 
@@ -113,12 +120,16 @@ class GameClient
             end #while
 
         rescue Interrupt
-            puts "\nclient application interrupted: shutting down..."
+            logMsg =  "\nclient application interrupted: shutting down..."
+			log(logMsg)
+			puts logMsg
             exit 0
         rescue SystemExit => e
             # On a system exit, exit gracefully
         rescue StandardError => e
-            puts 'Exception: ' + e.message()
+            errMsg = 'Exception: ' + e.message()
+			err(errMsg)
+			puts errMsg
             print e.backtrace.join('\n')
         end # error handling block
 
@@ -132,11 +143,13 @@ class GameClient
     private
 
     def log(msg)
-        puts "log: " + msg.to_s
+		logMsg = "log: #{msg}\n"
+		@log.syswrite(logMsg)
     end #log
 
     def err(msg)
-        puts "log: error: " + msg.to_s
+        logMsg = "error: #{msg}"
+		log(logMsg)
     end #err
 
 	#
@@ -161,7 +174,7 @@ class GameClient
 
 			# update: @buffer
 			@buffer = @buffer + data
-			puts "buffer on read :[#{@buffer}]"
+			#puts "buffer on read :[#{@buffer}]" #DEBUG
 
 			# validate: @buffer
 			result = validate(data)
@@ -201,33 +214,40 @@ class GameClient
     def write()
 
 		# get input
-        msg = STDIN.gets()
+        input = STDIN.gets()
 
-		# check for client disconnect command
-        if (msg.slice(0,4).eql?("quit") || msg.slice(0,1).eql?("q")) then
-			#TODO: this should just return to lobby - then if they exit again, drop connection            
-			log("signing off...")
-            exit 0
-        end
+		# chat
+		if ((input.slice(0,4) == "chat")) then
 
-		# list who is in the game still (l)
+			tmp = input[4...-1]
+			tmp.lstrip!()
+			tmp.rstrip!()
 
-		# show current cards (s)
-		if ((msg.slice(0,4) == "show") || (msg.slice(0,1) == "s") || (msg.slice(0,1) == "S")) then
-			show_cards()
+			input = ClientMsg.message("CHAT",[tmp])
+			@clientSocket.write(input)
+	        log("write: " + input)
 			return
+
 		end
 
-		# show current cards (s)
-		if ((msg.slice(0,4) == "help") || (msg.slice(0,1) == "h") || (msg.slice(0,1) == "H")) then
+		# display the help menu
+		if ((input.slice(0,4) == "help")) then
 			help_dialog()
 			return
 		end
 
-		# play a card (p)
-		if ((msg.slice(0,1) == "p") || (msg.slice(0,1) == "P")) then
+		# list who is in the game still
+		if ((input.slice(0,4) == "list")) then
+			list_players()
+			return
+		end
 
-			card = msg[2...-1].upcase
+		# play a card (p)
+		if ((input.slice(0,4) == "play")) then
+
+			card = input[4...-1].upcase()
+			card.lstrip!()
+			card.rstrip!()
 
 			##############################
 			play = checkPlayable(card)
@@ -236,25 +256,37 @@ class GameClient
 			if (play) then
 				c = Card.new(card[0].chr.upcase(), card[1].chr.upcase())
 				@player.discard(c)
-				msg = ClientMsg.message("PLAY",[card])
-				@clientSocket.write(msg)
-			    log("write: " + msg)
-
-			else
-				return
+				input = ClientMsg.message("PLAY",[card])
+				@clientSocket.write(input)
+			    log("player played: " + input)
+				show_play(c)
 			end
-
-			##############################
-
-		# chat
-		else
-
-			tmp = msg.chomp()
-			msg = ClientMsg.message("CHAT",[tmp])
-			@clientSocket.write(msg)
-	        log("write: " + msg)
+			return
 
 		end
+
+		# check for client disconnect command
+        if (input.slice(0,4).eql?("quit")) then
+			#TODO: this should just return to lobby - then if they exit again, drop connection
+			@state = :lobby          
+			log("signing off...")
+            exit 0
+        end
+
+		# show current card(s)
+		if ((input.slice(0,4) == "show")) then
+			show_cards()
+			return
+		end
+
+		# show top card
+		if ((input.slice(0,3) == "top")) then
+			show_top()
+			return
+		end
+
+		input.chomp!
+		puts "sorry, '#{input}' is not a recognized action. try typing 'help'."
 
     end #write
 
@@ -319,8 +351,7 @@ class GameClient
 		re = /\[([a-zA-Z]{2,9})\|(.*?)\]/i
 		m = @buffer.match re
 
-		puts "buffer matched #{@buffer}"
-		#puts m
+		#puts "buffer matched #{@buffer}"
 
 		# upon matching: (1) set command, (2) set command info, and (3) remove
 		#  this portion of the message from @buffer
@@ -329,11 +360,11 @@ class GameClient
 			info    = m[2]
 			@buffer.sub!(/\[([a-zA-Z]{2,9})\|(.*?)\]/i, "")
 		else
-			puts "received #{data}" #DEBUG
+			#puts "received #{data}" #DEBUG
 			return nil
 		end
 
-		puts "updated buffer: [#{@buffer}]"
+		#puts "updated buffer: [#{@buffer}]"
 
 		# validate: command
 		if !(ClientMsg.valid?(command)) then
@@ -342,7 +373,7 @@ class GameClient
 		end
 
 		#validate: info following command
-		if (info.size() < 1 || info.size() > 128) then
+		if (info.size() > 128) then
 			err("message error: message with command '#{command}' and content '#{info}' violates message length constraints") #DEBUG
 			return nil
 		end	
@@ -389,7 +420,7 @@ class GameClient
 	def process(command, args)
 
 		# check: nil/empty entries are illegal
-		if (command == nil || command == "" || args == nil || args == "") then
+		if (command == nil || command == "" || args == nil) then
 			raise "illegal call to 'process()': command & arguments are nil"
 		end
 
@@ -433,9 +464,10 @@ class GameClient
 	# uniqueness. correct name (if needed) and create the Player object.
 	#
 	def handle_accept(name)
-		puts "creating player with name #{name}" # DEBUG
 		@clientName = name
 		@player = Player.new(@clientName, 0)
+
+		log("creating player with name #{name}")
 	end
 
 	#
@@ -448,7 +480,8 @@ class GameClient
 		name = list.delete_at(0)
 		msg = list.join(',')
 
-        log("read: #{name}: #{msg}")
+        log("server: #{name}: #{msg}")
+		puts "#{name}: #{msg}"
 	end
 
 	#
@@ -457,7 +490,8 @@ class GameClient
 	# parse string of card(s) & add to player hand
 	#
 	def handle_deal(msg)
-        log("read: dealt: [#{msg}]") # DEBUG
+        log("server: [DEAL|#{msg}]")
+		puts ("dealt [#{msg}]")
 
 		# parse string of cards
 		list = parse_str(msg)
@@ -471,11 +505,8 @@ class GameClient
 	end
 
 	def handle_gg(name)
-		if name == @player.getName()
-			log ("read: you win!")
-		else
-	        log("read: player #{name} wins.")
-		end
+
+		show_win(name)
 		
 		# state: lobby
 		@state = :lobby 
@@ -483,15 +514,17 @@ class GameClient
 
 	def handle_go(card)
 		@top = card
-        log("read: GO (top card is #{card})")
-		puts @player.to_s
+
+        log("server: [GO|#{card}]")
+		show_go()
 
 		# state: play
 		@state = :play
 	end
 
 	def handle_invalid(msg)
-        err("read: server-error: #{msg}")
+        err("server-error: #{msg}")
+		puts("server:, #{msg}")
 	end
 
 	def handle_played(msg)
@@ -500,32 +533,77 @@ class GameClient
 		card = list[1]
 		@top = card
 
-        log("read: player #{name} played: #{card}")
+		log("server: [#{name}|#{card}]")
 
 		# state: wait
 		if (name == @player.getName()) then
 			@state = :wait
+		else
+			puts "player '#{name}' played [#{card}]"
 		end
+
 	end
 
 	def handle_players(msg)
-		#list = parse_str(msg)		
-        log("read: new player joined: players: #{msg}")
+
+		# TODO:
+		# right now I just overwrite the player list with any updates from
+		# the server. If better AI is to be implemented, new name from
+		# the server should be specically located and added to the tracking
+		# system for AI gameplay. 
+
+		prev = @players_list            #old list as strings
+		@players_list = parse_str(msg)  #new list
+
+		if prev.size() < @players_list.size() then # player connected
+
+			# locate the new name
+			name = ""
+			@players_list.each { |new|
+				if !(prev.include?(new)) then
+					name = new
+				end
+			}
+
+			if name != @player.getName()
+				puts "player '#{name}' has connected"
+			end
+			log("server: new player '#{name}' connected: [PLAYERS|#{msg}]")
+
+		else # (prev.size() >= @players_list.size()) --> player disconnected
+
+			# locate the new name
+			name = ""
+			prev.each { |old|
+				if !(@players_list.include?(old)) then
+					name = old
+				end
+			}
+
+			log("server: player '#{name}' has disconnected: [PLAYERS|#{msg}]")
+			puts "player '#{name}' has disconnected"
+
+		end
+
 	end
 
 	def handle_startgame(msg)
 		@players_list = parse_str(msg)
-        #log("read: starting game: players: #{list}")
+
+        log("server: starting game: [PLAYERS|#{msg}]")
 		start_game_dialog()
+
 		@state = :start
 	end
 
 	def handle_uno(name)
-        log("read: player #{name} said 'UNO!'")
+        log("server: player #{name} said 'UNO!': [UNO|#{name}]")
+		show_uno(name)
 	end
 
 	def handle_wait(name)
-        log("read: game in progress: creating player with name #{name} & waiting...") # DEBUG
+        log("server: game in progress: creating player with name #{name} & waiting...")
+		puts "game currently in progess: you are in line for the next game :)"
 		@clientName = name
 		@player = Player.new(@clientName, 0)
 	end
@@ -543,36 +621,42 @@ class GameClient
 
 		# check: currently this player's turn
 		if (@state != :play) then
-			log("it is not your turn to play yet!")
+			log("it is not your turn to play!")
+			puts "it is not your turn to play!"
 			return false
 		end
 
 		# check: type
 		if (!card.kind_of?(String)) then
-			log("(1) #{card} is not a valid card")
+			log("invalid string type: #{card} is not a valid card")
+			puts "#{card} is not a valid card"
 			return false
 		end
 
 		# check: card not nil
 		if (card == nil || card == "") then
-			log("you did not play a card (empty)")
+			log("'nil' or '\"\"' is not a valid card ")
+			puts "'nil' or '\"\"' is not a valid card "
 			return false
 		end
 
 		# check: valid card length
 		if card.length() > 2 then
-			log("(2) #{card} is not a valid card")
+			log("#{card} is not a valid card: cards have ONLY a color & an identifier")
+			puts "#{card} is not a valid card"
 			return false
 		end
 
 		if (card[0] == nil || card[1] == nil) then
-			log("(3) #{card} is not a valid card")
+			log("#{card} is not a valid card (either color or identifier is nil)")
+			puts "#{card} is not a valid card"
 			return false
 		end
 
 		# check: no play (NN)
 		if (card == "NN") then
-			log("couldn't play, eh?")
+			log("player unable to play - request additional card or be skipped")
+			puts "server: couldn't play, eh? prepare to get another card or be skipped..."
 			return true
 		end
 
@@ -591,7 +675,8 @@ class GameClient
 			end			
 		}
 		if (!found) then
-			log("you don't have a #{card}")
+			log("player doesn't have a #{card}")
+			puts"hey there, you don't have a #{card}!"
 			return false
 		end 
 
@@ -611,6 +696,7 @@ class GameClient
 			return true
 		else
 			log("#{card} cannot be played on a #{t_prefix}#{t_suffix}")
+			puts "#{card} cannot be played on a #{t_prefix}#{t_suffix}"
 			return false
 		end
 
@@ -624,37 +710,98 @@ class GameClient
 
 	def start_game_dialog()
 		list = @players_list.join(", ")
-
-		puts ""
-		puts "-----------------------------"
-		puts "|  UNO game is beginning!   |"
-		puts "-----------------------------"
-		puts ""
-		puts "The players for this game are: #{list}"
-		puts ""
+		name = @player.getName()
+	
+		puts "-----------------------------------------------------------------"
+		puts "|                                                               |"
+		puts "|" +  "UNO game is beginning! Welcome, #{name}!".center(63) +  "|"
+		puts "|                                                               |"
+		puts "-----------------------------------------------------------------"
+		list_players()
 	end
 
 	def help_dialog()
-		puts
-		puts "----------------------------------------"
-		puts "| Help Menu:                           |"
-		puts "|    'h'        show help menu         |"
-		puts "|    'p XX'     play card XX           |"
-		puts "|    'q'        quit current game      |"
-		puts "|    's'        show current cards     |"
-		puts "|                                      |"
-		puts "| NOTE: to chat, just write something! |"
-		puts "----------------------------------------"
-		puts
-	end
-	
-	def show_cards()
-		puts "----------------------------------------"
-		puts @player.to_s
-		puts "----------------------------------------"
+		puts "-----------------------------------------------------------------"
+		puts "| UNO Help Menu:                                                |"
+		puts "|                                                               |"
+		puts "|    'chat'        chat with other players                      |"
+		puts "|    'help'        show help menu                               |"
+		puts "|    'list'        show players in this game                    |"
+		puts "|    'play XX'     play card XX                                 |"
+		puts "|    'quit'        quit current game                            |"
+		puts "|    'show'        show current cards                           |"
+		puts "|    'top'         show current top card                        |"
+		puts "|                                                               |"
+		puts "-----------------------------------------------------------------"
 	end
 
-	def quit()
+	def list_players()
+		list = @players_list.join(", ")
+		puts "-----------------------------------------------------------------"
+		puts "|"     +    "Players: #{list}".center(63)    +    "|"
+		puts "-----------------------------------------------------------------"
+
+	end
+
+	def show_go()
+		puts "-----------------------------------------------------------------"
+		puts "|"     +    "Your Turn! Top Card: [#{@top}]".center(63)   +    "|"
+		puts "|"           +    "My #{@player}".center(63)     +             "|"
+		puts "-----------------------------------------------------------------"
+	end
+
+
+	def show_cards()
+		puts "-----------------------------------------------------------------"
+		puts "|"               +   "#{@player}".center(63)    +              "|"
+		puts "-----------------------------------------------------------------"
+	end
+
+	def show_play(card)
+		puts "-----------------------------------------------------------------"
+		puts "|"        +      "Played: [#{card}]".center(63)    +          "|"
+		puts "-----------------------------------------------------------------"
+	end
+
+	def show_top()
+		puts "-----------------------------------------------------------------"
+		puts "|"        +      "Top Card: [#{@top}]".center(63)    +          "|"
+		puts "-----------------------------------------------------------------"
+	end
+
+	def show_quit()
+		name = @player.getName()
+		puts "-----------------------------------------------------------------"
+		puts "|                                                               |"
+		puts "|"    +    "Leaving UNO Game; Bye, #{name}!".center(63)    +   "|"
+		puts "|                                                               |"
+		puts "-----------------------------------------------------------------"		
+	end
+
+	def show_uno(name)
+		puts "-----------------------------------------------------------------"
+		puts "|"         +       "#{name}: UNO!".center(63)       +           "|"
+		puts "-----------------------------------------------------------------"		
+	end
+
+	def show_win(name)
+
+		if name == "" then
+			puts "-----------------------------------------------------------------"
+			puts "|"+"Sorry, The Game Ended Due To Insufficient Players...".center(63)+"|"
+			puts "-----------------------------------------------------------------"
+			log("server: game ended due to insufficient players")
+		elsif name == @player.getName() then
+			puts "-----------------------------------------------------------------"
+			puts "|"   +   "Congratulations, #{name}! You Won!".center(63)  +   "|"
+			puts "-----------------------------------------------------------------"
+			log("congratulations, player won!: [GG|#{name}]")
+		else
+			puts "-----------------------------------------------------------------"
+			puts "|"         +       "#{name} Wins!".center(63)      +           "|"
+			puts "-----------------------------------------------------------------"
+			log("player #{name} won!: [GG|#{name}]")
+		end
 
 	end
 

@@ -60,7 +60,7 @@ class Deck
 		badTop!()
 	end #shuffle
 
-	def replenish!()
+	def replenish!(n)
 		if (size() < n) then
 			@cards = @discard_pile
 			@discard_pile = []
@@ -70,7 +70,13 @@ class Deck
 
 	# deal 
 	def deal(num)
+
 		if (num.kind_of? Integer)
+
+			# check: if the # of cards to be dealt is > # of cards in deck, 
+			# replenish the deck. (if this isn't the case, replenish! is a no-op 
+			replenish!(num)
+
 			if (num > 0 and num < 8)
 				cards = []
 				num.times{
@@ -79,7 +85,9 @@ class Deck
 				return cards
 			end #if
 		end #if
+
 		return nil
+
 	end #deal
 
 	def discard(card)

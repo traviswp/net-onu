@@ -253,12 +253,7 @@ if __FILE__ == $0 then
 #test_players()
 #validate()
 
-str = "travis,jelloman,max,bart,maggie"
-puts str
-names = str.split(",")
-puts names
 
-l = names.join(", ")
-puts "the players are: #{l}"
+puts ["w"].concat(["hey"])
 
 end #if
