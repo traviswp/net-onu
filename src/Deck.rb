@@ -160,14 +160,18 @@ class Deck
 			l = l + "#{c},"
 		}
 		l[-1] = ""
-		puts l + "#{@cards.size()}"
+		l = l + " -- [#{@cards.size()}]\n"
+		#puts l + " -- [#{@cards.size()}]"
 
 		l = "The Discard Pile: "
 		@discard_pile.each { |c|
 			l = l + "#{c},"
 		}
 		l[-1] = ""
-		puts l + "#{@discard_pile.size()}"
+		l = l + " -- [#{@discard_pile.size()}]\n"
+		#puts l + " -- [#{@discard_pile.size()}]"
+
+		return l
 		
 	end #showDeck
 

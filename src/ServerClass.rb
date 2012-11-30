@@ -24,6 +24,10 @@ class GameServer
     
     def initialize(port, min, max, timeout, lobby)
 	
+		# variables: support logging
+		file = "../logs/server-log.txt"
+		@log = File.new(file, "w+")
+
 		# variables: game-timer logic
 		@timer            = timeout                       # Timer till game starts
         @game_timer_on    = false                         # Time until game starts
@@ -32,10 +36,11 @@ class GameServer
 
         # variables: service connections via call to 'select'
         @port             = port                          # Port
-        @descriptors      = Array.new()                   # Collection of the server's sockets
+        @r_descriptors      = Array.new()                   # Collection of server's read sockets
+		@w_descriptors    = Array.new()					  # Collection of server's write sockets #TODO: IMPLEMENT
         @server_socket    = TCPServer.new("", port)       # The server socket (TCPServer)
         @timeout          = timeout                       # Default timeout
-        @descriptors.push(@server_socket)                 # Add serverSocket to descriptors
+        @r_descriptors.push(@server_socket)               # Add serverSocket to descriptors
 		@message_queues  = Hash.new()                     # Contains buffers for interaction with each individual client
         
         # enables the re-use of a socket quickly
@@ -79,7 +84,9 @@ class GameServer
     def run()
 
         begin # error handling block
-count = 0        
+
+			count = 0        
+
             while true
 
 				#############################################################
@@ -88,7 +95,7 @@ count = 0
 
 				@new_connection = false
 				
-                result = select(@descriptors, nil, nil, @timeout)
+                result = select(@r_descriptors, @w_descriptors, nil, 0)
 				
                 if result != nil then
                 
@@ -125,10 +132,11 @@ count = 0
 				#############################################################
 				#                  Pre-Service Game State(s)                #
 				#############################################################
-				
-				puts "\n-------------------------------------------------#{count}"
-				puts "#{@players.to_s}"
-				@deck.showDeck()
+
+				log("\n-------------------------------------------------#{count}")
+				log("#{@players.to_s}")
+				log("")
+				log(@deck.showDeck())
 				count = count + 1
 
 #				puts "Game Timer On: " + @game_timer_on.to_s
@@ -230,11 +238,14 @@ count = 0
     private
 
     def log(msg)
-        puts "log: " + msg.to_s + "\n"
+		logMsg = "log: #{msg}\n"
+		puts logMsg
+		@log.syswrite(logMsg)
     end # log
 	
 	def err(msg)
-		log ("error: " + msg.to_s + "\n")
+		errMsg = "error: #{msg}"
+		log(errMsg)
 	end # err
     
 	#
@@ -250,7 +261,8 @@ count = 0
 			socket.write(msg)
 			name = x.getName()
 		else
-			socket = @descriptors.find{ |s| s == x }
+###			socket = @descriptors.find{ |s| s == x }
+			socket = @w_descriptors.find{ |s| s == x }
 			if socket != nil then
 				socket.write(msg)
 				player = @players.getPlayerFromSocket(x)
@@ -269,7 +281,8 @@ count = 0
 
 		    # Iterate over all known sockets, writing to everyone except for
 		    # the omit_sock & the serverSocket
-		    @descriptors.each do |client_socket|
+		    ###@descriptors.each do |client_socket|
+		    @w_descriptors.each do |client_socket|
 		        
 		        if client_socket != @server_socket && client_socket != omit_sock then
 		            client_socket.write(msg)
@@ -292,7 +305,7 @@ count = 0
         new_socket = @server_socket.accept
 
 		# Add new socket to descriptors
-		@descriptors.push(new_socket)
+		@r_descriptors.push(new_socket)
 
 		# Create a queue for each connection
 		@message_queues[new_socket] = ""
@@ -329,7 +342,7 @@ count = 0
 
 		# handle descriptors
 		socket.close()
-		@descriptors.delete(socket)
+		@r_descriptors.delete(socket)
 
 	end # close_connection
 	

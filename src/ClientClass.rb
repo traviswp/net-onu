@@ -30,11 +30,13 @@ class GameClient
         @buffer = ""                            # Buffer for processing server messages
 
 		# Read/Write log file
+		location = "../logs/"
 		filename = @clientName + "_log.txt"     # Log file name (client name + '_log.txt'
-		@log = File.new(filename,"w+")          # Log file
+		file = location+filename
+		@log = File.new(file,"w+")          # Log file
 
         # parameters for select
-        @timeout      = 1                       # Client timeout for select call
+        #@timeout      = 1                       # Client timeout for select call <== Do I need this? 
         @descriptors  = Array.new()             # Collection of sockets
         @descriptors.push(STDIN)                # Client socket (standard input)
 
@@ -65,7 +67,7 @@ class GameClient
 
             while true
 
-                result = select(@descriptors, nil, nil, @timeout)
+                result = select(@descriptors, nil, nil, 0)
 
                 if result != nil then
 
