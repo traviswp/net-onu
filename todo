@@ -3,9 +3,7 @@ TODO List:
 2) Implement a timer for players that are playing - if they don't respond with a valid play (30 seconds or so) then
 drop that player from the game.
 
-3) AI
-
-4) clean up server/client output
+3) AI (still needs some work...)
 
 5) error handling - server should NOT raise exceptions due to client
 
@@ -22,6 +20,7 @@ x 1)Fix messages so that we read in all of a message into another buffer so that
       + max length of message, or
       + closing delimeter
 
+x 4) clean up server/client output
 
 x 7) add ability to connect via IP address or web address
     - e.g. 127.0.0.1 or cf405-20.cs.wwu.edu
