@@ -1,26 +1,33 @@
-TODO List:
+===============================================================================================================
+                                              TODO List:
+===============================================================================================================
 
-2) Implement a timer for players that are playing - if they don't respond with a valid play (30 seconds or so) then
-drop that player from the game.
+- Server: change the way messages are written. Buffer outgoing messages into a list of descriptors so that
+          the call to select doesn't hang during auto play
 
-3) AI (still needs some work...)
+- Server: Implement a timer for players that are playing - if they don't respond with a valid play 
+          (30 seconds or so) then drop that player from the game.
 
-5) error handling - server should NOT raise exceptions due to client
+- Client: AI (still needs some work...)
 
-6) add "waiting"
+- Server: error handling - server should NOT raise exceptions due to client
 
-Complete:
+- Server: add "waiting"
 
-x 1)Fix messages so that we read in all of a message into another buffer so that we can process
-    messages properly -- right now I am potentially dropping messages when there are more
-    complete messages waiting to be processed after the first message I see. 
+===============================================================================================================
+                                              Complete:
+===============================================================================================================
 
-    - Use a loop and read a single character at a time. 
-    - Search for:
-      + max length of message, or
-      + closing delimeter
+- Server/Client: Fix messages so that we read in all of a message into another buffer so that we can process
+                 messages properly -- right now I am potentially dropping messages when there are more
+                 complete messages waiting to be processed after the first message I see. 
+            
+                 - Use a loop and read a single character at a time. 
+                 - Search for:
+                   + max length of message, or
+                   + closing delimeter
 
-x 4) clean up server/client output
+- Server/Client: clean up output
 
-x 7) add ability to connect via IP address or web address
+- Client: add ability to connect via IP address or web address
     - e.g. 127.0.0.1 or cf405-20.cs.wwu.edu
