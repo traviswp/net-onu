@@ -1,14 +1,5 @@
 TODO List:
 
-1) *** Fix messages so that we read in all of a message into another buffer so that we can process
-    messages properly -- right now I am potentially dropping messages when there are more
-    complete messages waiting to be processed after the first message I see. 
-
-    - Use a loop and read a single character at a time. 
-    - Search for:
-      + max length of message, or
-      + closing delimeter
-
 2) Implement a timer for players that are playing - if they don't respond with a valid play (30 seconds or so) then
 drop that player from the game.
 
@@ -19,6 +10,18 @@ drop that player from the game.
 5) error handling - server should NOT raise exceptions due to client
 
 6) add "waiting"
+
+Complete:
+
+x 1)Fix messages so that we read in all of a message into another buffer so that we can process
+    messages properly -- right now I am potentially dropping messages when there are more
+    complete messages waiting to be processed after the first message I see. 
+
+    - Use a loop and read a single character at a time. 
+    - Search for:
+      + max length of message, or
+      + closing delimeter
+
 
 x 7) add ability to connect via IP address or web address
     - e.g. 127.0.0.1 or cf405-20.cs.wwu.edu
