@@ -66,6 +66,9 @@ class GameServer
 		@player_timer     = false                         # Boolean represents if player turn is active (go command has been issued)
 		@player_time      = 20                            # Default player response time
 		@player_strikes   = 3
+
+		@count = 0
+
 		############################ DEBUG ############################
 
 		# variables: deck/card management
@@ -85,8 +88,6 @@ class GameServer
 
         begin # error handling block
 
-			count = 0        
-
             while true
 
 				#############################################################
@@ -95,7 +96,7 @@ class GameServer
 
 				@new_connection = false
 				
-                result = select(@r_descriptors, @w_descriptors, nil, 0)
+                result = select(@r_descriptors, nil, nil, 0)
 				
                 if result != nil then
                 
@@ -132,12 +133,6 @@ class GameServer
 				#############################################################
 				#                  Pre-Service Game State(s)                #
 				#############################################################
-
-				log("\n-------------------------------------------------#{count}")
-				log("#{@players.to_s}")
-				log("")
-				log(@deck.showDeck())
-				count = count + 1
 
 #				puts "Game Timer On: " + @game_timer_on.to_s
 #				puts "Game In Progress: " + @game_in_progress.to_s				
@@ -261,8 +256,8 @@ class GameServer
 			socket.write(msg)
 			name = x.getName()
 		else
-###			socket = @descriptors.find{ |s| s == x }
-			socket = @w_descriptors.find{ |s| s == x }
+			socket = @r_descriptors.find{ |s| s == x }
+###			socket = @w_descriptors.find{ |s| s == x }
 			if socket != nil then
 				socket.write(msg)
 				player = @players.getPlayerFromSocket(x)
@@ -281,8 +276,8 @@ class GameServer
 
 		    # Iterate over all known sockets, writing to everyone except for
 		    # the omit_sock & the serverSocket
-		    ###@descriptors.each do |client_socket|
-		    @w_descriptors.each do |client_socket|
+		    ###@w_descriptors.each do |client_socket|
+		    @r_descriptors.each do |client_socket|
 		        
 		        if client_socket != @server_socket && client_socket != omit_sock then
 		            client_socket.write(msg)
@@ -797,6 +792,13 @@ class GameServer
 
 	def afterDiscard()
 		#puts "state: afterDiscard" ###DEBUG
+		log("\n-------------------------------------------------#{@count}")
+		log("#{@players.to_s}")
+		log("")
+		log(@deck.showDeck())
+		log("-----------------------------------------------------------")
+		@count = @count + 1
+
 
 		# send [PLAYED|playername,CV]
 		msg = ServerMsg.message("PLAYED", [@playerPlayed.getName(),@card.to_s])

@@ -167,7 +167,13 @@ class GameClient
 		while(true)
 
 			# read: input on clientSocket
-			data = @clientSocket.recv(1024)
+			begin
+				data = @clientSocket.recv(1024)
+			rescue Exception => e
+	            #print e.backtrace
+				return nil
+			end
+
 			data.chomp!
 
 			# check: dropped/closed connection
@@ -278,14 +284,20 @@ class GameClient
 					c = Card.new(card[0].chr.upcase(), card[1].chr.upcase())
 
 					# TODO: Are you deleting wilds and wild draw fours correctly?
-					@player.discard(c)
+					pos = @player.discard(c)
+
+if pos != nil then
+	puts "MY CARD #{c} at position #{pos}"
+else
+	puts "MY CARD #{c} at position NIL"
+end
 
 					input = ClientMsg.message("PLAY",[card])
 
 					@clientSocket.write(input)
 
 					name = @player.getName()
-					log("#{name} cards: #{@player}")
+					log("#{name} #{@player}")
 					log("my turn: (#{@state}) - #{name} playing a card: " + input)
 
 					show_play(c,"")
@@ -446,7 +458,14 @@ class GameClient
 				# Discard the card
 
 				# TODO: Are you deleting wilds and wild draw fours correctly?
-				@player.discard(myCard)
+				pos = @player.discard(myCard)
+
+if pos != nil then
+	puts "MY CARD #{myCard} at position #{pos}"
+else
+	puts "MY CARD #{myCard} at position NIL"
+end
+
 				show_play("#{myCard}","")
 
 				# Inform client of play
@@ -510,18 +529,18 @@ class GameClient
 
 			# check: can this card be played on the given top card?
 
-			if (suffix == "F" && card.getIdentifier == "F") then      # wild draw 4 (random color)
+			if (card.getIdentifier == "F") then           # wild draw 4 (random color)
 				color = colors[ (rand(3) % 4) ]
 				play = "#{color}F"
 				return play
-			elsif (suffix == "W" && card.getIdentifier() == "W") then # wild (random color)
+			elsif (card.getIdentifier() == "W") then      # wild (random color)
 				color = colors[ (rand(3) % 4) ]
 				play = "#{color}W"
 				return play
-			elsif (prefix == card.getColor()) then                    # same color
+			elsif (prefix == card.getColor()) then        # same color
 				play = "#{card}"
 				return play
-			elsif (suffix == card.getIdentifier()) then               # same identifier
+			elsif (suffix == card.getIdentifier()) then   # same identifier
 				play = "#{card}"
 				return play
 			end

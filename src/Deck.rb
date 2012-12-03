@@ -62,6 +62,7 @@ class Deck
 
 	def replenish!(n)
 		if (size() < n) then
+			sleep(3)
 			puts "MUST REPLENISH DECK!!!"
 			@cards = @discard_pile
 			@discard_pile = []
@@ -163,7 +164,7 @@ class Deck
 		l = l + " -- [#{@cards.size()}]\n"
 		#puts l + " -- [#{@cards.size()}]"
 
-		l = "The Discard Pile: "
+		l += "The Discard Pile: "
 		@discard_pile.each { |c|
 			l = l + "#{c},"
 		}
