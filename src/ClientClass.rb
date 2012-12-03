@@ -246,7 +246,7 @@ class GameClient
 
 				input = ClientMsg.message("CHAT",[tmp])
 				@clientSocket.write(input)
-			    log("write: " + input)
+			    log("write (chat): " + input)
 				return
 
 			end
@@ -276,10 +276,18 @@ class GameClient
 
 				if (play) then
 					c = Card.new(card[0].chr.upcase(), card[1].chr.upcase())
+
+					# TODO: Are you deleting wilds and wild draw fours correctly?
 					@player.discard(c)
+
 					input = ClientMsg.message("PLAY",[card])
+
 					@clientSocket.write(input)
-					log("player played: " + input)
+
+					name = @player.getName()
+					log("#{name} cards: #{@player}")
+					log("my turn: (#{@state}) - #{name} playing a card: " + input)
+
 					show_play(c,"")
 				end
 				return
@@ -436,6 +444,8 @@ class GameClient
 				@attempt = 0 #resetn @attempt
 
 				# Discard the card
+
+				# TODO: Are you deleting wilds and wild draw fours correctly?
 				@player.discard(myCard)
 				show_play("#{myCard}","")
 
@@ -444,7 +454,9 @@ class GameClient
 				@clientSocket.write(input)
 		
 				# Log/Display play outcome
-				log("player played: " + input)
+				name = @player.getName()
+				log("#{name} cards: #{@player}")
+				log("my turn: (#{@state}) - #{name} playing a card (auto): " + input)
 
 				# State transition --> wait
 				@state = :wait
@@ -460,15 +472,18 @@ class GameClient
 				@clientSocket.write(input)
 
 				# Log/Display play outcome
-				log("player played: " + input)
-				show_play("NN","")
+				name = @player.getName()
+				log("#{name} cards: #{@player}")
+				log("my turn: (#{@state}) - #{name} playing 'NN' (auto): " + input)
 
 				# check: if player has exceeded allowable attempts
 				if @attempt == 2 then
 					# State transition --> wait
 					@attempt = 0 #reset @attempt
-					@state = :wait
 				end
+
+				# always wait after play for response from server
+				@state = :wait
 
 				return
 
@@ -495,18 +510,18 @@ class GameClient
 
 			# check: can this card be played on the given top card?
 
-			if (suffix == "F") then                      # wild draw 4 (random color)
+			if (suffix == "F" && card.getIdentifier == "F") then      # wild draw 4 (random color)
 				color = colors[ (rand(3) % 4) ]
 				play = "#{color}F"
 				return play
-			elsif (prefix == card.getColor()) then       # same color
-				play = "#{card}"
-				return play
-			elsif (suffix == "W") then                   # wild (random color)
+			elsif (suffix == "W" && card.getIdentifier() == "W") then # wild (random color)
 				color = colors[ (rand(3) % 4) ]
 				play = "#{color}W"
 				return play
-			elsif (suffix == card.getIdentifier()) then  # same identifier
+			elsif (prefix == card.getColor()) then                    # same color
+				play = "#{card}"
+				return play
+			elsif (suffix == card.getIdentifier()) then               # same identifier
 				play = "#{card}"
 				return play
 			end
@@ -621,8 +636,10 @@ class GameClient
 		# state: lobby
 		@state = :lobby 
 
-puts "WIN!!!"
-exit(0)
+		@player.reset!()
+
+#puts "WIN!!!"
+#exit(0)
 	end
 
 	# go

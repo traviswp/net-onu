@@ -254,6 +254,4 @@ if __FILE__ == $0 then
 #validate()
 
 
-puts ["w"].concat(["hey"])
-
 end #if

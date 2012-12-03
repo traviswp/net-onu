@@ -41,6 +41,10 @@ class Player
 		return @cards.length()
 	end
 
+	def reset!()
+		@cards = []
+	end
+
 	def discard(card)
 
 		# card represented as a string
