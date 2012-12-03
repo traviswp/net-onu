@@ -26,7 +26,14 @@ class GameServer
 	
 		# variables: support logging
 		file = "../logs/server-log.txt"
-		@log = File.new(file, "w+")
+		@log = File.new(file, "w+")                       # Log file for server activity
+
+		# variables: game environment
+        @min              = min                           # Min players needed for game
+        @max              = max                           # Max players allowed for game
+        @lobby            = lobby                         # Max # players that can wait for a game
+		@direction        = 1                             # direction of game play (1 or -1 for positive or negative, respectively)
+		@step             = 1                             # increment @step players (normal: 1; skip: add 1 to make 2)
 
 		# variables: game-timer logic
 		@timer            = timeout                       # Timer till game starts
@@ -36,8 +43,8 @@ class GameServer
 
         # variables: service connections via call to 'select'
         @port             = port                          # Port
-        @r_descriptors      = Array.new()                   # Collection of server's read sockets
-		@w_descriptors    = Array.new()					  # Collection of server's write sockets #TODO: IMPLEMENT
+        @r_descriptors    = Array.new()                   # Collection of server's read sockets
+		###@w_descriptors    = Array.new()					 # Collection of server's write sockets #TODO: IMPLEMENT
         @server_socket    = TCPServer.new("", port)       # The server socket (TCPServer)
         @timeout          = timeout                       # Default timeout
         @r_descriptors.push(@server_socket)               # Add serverSocket to descriptors
@@ -48,28 +55,26 @@ class GameServer
 
         # variables: player management
 		@players          = PlayerList.new()              # List of all players (active)
-        #@waiting_list     = PlayerList.new()             # List of all other players (waiting)
+        @waiting          = PlayerList.new()              # List of all other players (waiting)
 		@total_players    = 0                             # Total number of players connected
-        @min              = min                           # Min players needed for game
-        @max              = max                           # Max players allowed for game
-        @lobby            = lobby                         # Max # players that can wait for a game
-		@direction        = 1                             # direction of game play (1 or -1 for positive or negative, respectively)
-		@step             = 1                             # increment @step players (normal: 1; skip: add 1 to make 2)
+
 		@current          = 0                             # index of the current player whose turn it is
-	
-		############################ DEBUG ############################
-		@playerPlayed     = nil
-		@card             = nil
-		@attempt          = 0
-		@action           = nil
-		############################ DEBUG ############################
-		@player_timer     = false                         # Boolean represents if player turn is active (go command has been issued)
-		@player_time      = 20                            # Default player response time
-		@player_strikes   = 3
+		@playerPlayed     = nil                           # Reference to current player who is playing
+		@card             = nil                           # Reference to the card played by the current player
+		@attempt          = 0                             # The attempt count that the player is on (between 0 & 2)
+		@action           = nil                           # Represents the action associated with the card played by the current player
 
+		############################ DEBUG ############################
+		@player_timer_on  = false
+		@player_start     = 0
+		@player_time      = 0
+		@inactive_wait    = 20                            # Default player response time
+
+		@player_strikes   = 5
+
+		############################ TESTING ############################
 		@count = 0
-
-		############################ DEBUG ############################
+		############################ TESTING ############################
 
 		# variables: deck/card management
 		@deck = Deck.new()
@@ -120,12 +125,7 @@ class GameServer
                             end #if
 
                         end #if
-               
-						# I don't know how I feel about this...
-						#if @new_connection then
-						#	read(socket)
-						#end
-     
+                    
                     end #for            
 
                 end #if
@@ -151,7 +151,7 @@ class GameServer
 				if (game_in_progress) then
 					if (!player_check) then
 						@state = @states[0]
-						msg = ServerMsg.message("GG",[""])
+						msg = ServerMsg.message("GG", @players.list())
 						log (msg)
 						broadcast(msg, nil)
 					else
@@ -181,9 +181,27 @@ class GameServer
 							#puts "service: new connection & reset timer"
 							@start_time = Time.now().to_i                           # reset start_time
 						end #if
-					elsif (@new_connection) then              # player joing after game is full/game started
+					elsif (@new_connection) then              # player joining after game is full/game started
 						#puts "service: (initial) new connection"
 					end #if
+
+				end
+
+				# check: drop player due to inactivity
+				if (@state == :waitaction) then
+
+					@player_time = Time.now().to_i
+					if ((@player_time - @player_start).abs() > @inactive_wait) then
+
+						# log action
+						log("#{name}: connection dropped: exceeded max inactivity time")
+
+						# drop the player & continue
+						player = getPlayerFromPos(@current)
+						drop_connection(player)
+						move()
+	
+					end
 
 				end
 
@@ -340,6 +358,11 @@ class GameServer
 		@r_descriptors.delete(socket)
 
 	end # close_connection
+
+	def drop_connection(player)
+		socket = getSocketFromPlayer(player)
+		close_connection(socket)
+	end # drop_connection
 	
 	def read(socket)
 
@@ -428,13 +451,15 @@ class GameServer
 		end
 	end
 
-	def handle_join(name, socket) ###### ************
+	def handle_join(name, socket)
 
         ########################################
 		# Validation
         result = name_validation(name)
         ########################################
-		puts result
+
+		puts result #TODO: remove - debug
+
 		# invalid join
 		if result == nil then
 			return

@@ -26,6 +26,10 @@ class PlayerList
 		return @player_list
 	end # getPlayers
 	
+	def getPlayerFromPos(pos)
+		rp = @players_list.at(pos)
+	end
+
 	def getPlayerFromSocket(socket)
 		rp = @player_list.find { |player| player.socket == socket }
 		return rp
