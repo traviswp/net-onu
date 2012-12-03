@@ -8,6 +8,8 @@
 - Server: Implement a timer for players that are playing - if they don't respond with a valid play 
           (30 seconds or so) then drop that player from the game.
 
+- Server: Implement a strike system for players that are playing (5 strikes and boot?).
+
 - Client: AI (still needs some work...)
 
 - Server: error handling - server should NOT raise exceptions due to client
