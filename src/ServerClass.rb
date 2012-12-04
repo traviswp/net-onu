@@ -136,10 +136,11 @@ class GameServer
 				player_check     = (min_check? && max_check?)   # check: player count 
 				game_in_progress = (@states.index(@state) > 0)  # check: game status
 				################################################################
-puts "back..."				
+puts "<#{@players.getSize()}><#{@waiting.getSize()}> player-check: [#{player_check}: <#{min_check?}><#{max_check?}>] | game_in_progress: [#{game_in_progress}]"
+
 				# game in progress
 				if (game_in_progress) then
-
+#puts "game in progress"
 					# check: minimum amount of players are connected
 					if (@players.getSize() == 1) then
 
@@ -155,6 +156,7 @@ puts "back..."
 					end
 
 				else # game NOT in progress (before game)
+#puts "game NOT in progress"
 
 					#check: timer has started (min_check? and max_check? was satisfied)
 					if (@game_timer_on) then
@@ -197,18 +199,22 @@ puts "player-check:#{player_check}"
 					#	end
 					else # player_check failed & game is not in progress - wait for connections
 						  # or see if anyone is waiting from a previous game...
-
+#puts "can we add players to game from waiting list? #{max_check?} | #{@waiting.getSize()}"
 						# check if players from waiting list can move to players list
-						while ( (max_check?) && (@waiting.getSize() > 0) ) do
+
+						while ( (@players.getSize() + 1 <= @max) && (@waiting.getSize() > 0) ) do
 
 							# move player from one list to another
 							player = @waiting.getFront()
 							@players.add(player)
 
 							log("moving #{player.getName()} from waiting to players list")
+							sleep(2)
 							log(@players.list())
 							log(@waiting.list())
 						end
+
+
 
 					end #if
 
@@ -299,7 +305,6 @@ puts "player-check:#{player_check}"
 		if (x.kind_of? Player) then
 			socket = @players.getSocketFromPlayer(x)
 			if socket != nil then
-puts "abot to try to write to #{x.getName()}: #{msg}"
 				socket.write(msg)
 			end
 		else
@@ -322,7 +327,7 @@ puts "abot to try to write to #{x.getName()}: #{msg}"
 		    # the omit_sock & the serverSocket
 		    @r_descriptors.each do |client_socket|
 		        
-		        if client_socket != @server_socket && client_socket != omit_sock then
+		        if client_socket != nil && client_socket != @server_socket && client_socket != omit_sock then
 		            client_socket.write(msg)
 		        end #if
 		        
@@ -377,6 +382,7 @@ puts "abot to try to write to #{x.getName()}: #{msg}"
 		else 
 
 			# physically remove player from list
+			player = @waiting.getPlayerFromSocket(socket)
 			@waiting.remove(player)
 
 		end
@@ -402,7 +408,7 @@ puts "abot to try to write to #{x.getName()}: #{msg}"
 		# check: player is waiting (not a player in the game)
 		if player_in_game == nil then
 
-			remove_player(player_in_game)
+			remove_player(socket)
 
 		# check: player is playing in the game
 		else
@@ -553,7 +559,7 @@ puts "process: [#{command}|#{args}]"
 			p = Player.new(name, socket)
 
 			# Add player to the appropriate list
-			if max_check? then
+			if ((@players.getSize() + 1) <= @max) then
 
 				if (@state == :beforegame || @state == :endgame) then
 
@@ -994,16 +1000,18 @@ puts "process: [#{command}|#{args}]"
 		full_reset()
 
 		# check if players from waiting list can move to players list
-log("check waiting queue before moving on...")
-		while ( (max_check?) && (@waiting.getSize() > 0) ) do
-
+log("check waiting queue before moving on...<#{max_check?}><#{@waiting.getSize()}>")
+		while ( (@players.getSize() + 1 <= @max) && (@waiting.getSize() > 0) ) do
+log("before <#{@players.getSize()}><#{max_check?}><#{@waiting.getSize()}>")
 			# move player from one list to another
 			player = @waiting.getFront()
 			@players.add(player)
 
 			log("moving #{player.getName()} from waiting to players list (end of full game)")
+			sleep(2)
 			log(@players.list())
 			log(@waiting.list())
+log("after <#{@players.getSize()}><#{max_check?}><#{@waiting.getSize()}>")
 		end
 log("done checking queue")
 		# reset game state
@@ -1200,7 +1208,7 @@ log("done checking queue")
 	# Max Check: return boolean value indicating if there are more players than the maximum allowed
 	#
 	def max_check?()
-		return @players.getSize() <= (@max - 1)
+		return @players.getSize() <= @max #(@max - 1)
 	end # max
 
 	#

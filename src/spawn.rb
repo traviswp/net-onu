@@ -15,7 +15,7 @@ names  = ["Travis","Zeus","RonSwanson","DanTheMan","Mary","BigMike","Snookie"]
 colors = ["black", "white"]
 
 puts "spawning #{names.size()} clients & connecting to server..."
-for i in 0...names.size()
+for i in 0...names.size()-3
 	name = names[i]
 	bgcolor = colors[0]
 	fgcolor = colors[1]#i+1 % colors.size()]

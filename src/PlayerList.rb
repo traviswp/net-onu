@@ -78,7 +78,6 @@ class PlayerList
             rp = @player_list.find { |p| p.getName() == player.getName() }
             if rp != nil then
                 @player_list.delete(rp)
-                #@number_of_players = @number_of_players - 1
             end #if             
         end
 		@player_list = @player_list.compact()
