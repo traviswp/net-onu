@@ -1,4 +1,4 @@
-#!/usr/local/bin/ruby
+#!/usr/bin/env ruby
 
 # Sockets are in the standard library
 require 'socket' 
@@ -36,7 +36,7 @@ class GameServer
 		@step             = 1                             # increment @step players (normal: 1; skip: add 1 to make 2)
 
 		# variables: game-timer logic
-		@timer            = timeout                       # Timer till game starts
+		@timeout          = timeout                       # Timer till game starts
         @game_timer_on    = false                         # Time until game starts
 		@start_time       = 0
 		@current_time     = 0
@@ -44,9 +44,7 @@ class GameServer
         # variables: service connections via call to 'select'
         @port             = port                          # Port
         @r_descriptors    = Array.new()                   # Collection of server's read sockets
-		###@w_descriptors    = Array.new()					 # Collection of server's write sockets #TODO: IMPLEMENT
         @server_socket    = TCPServer.new("", port)       # The server socket (TCPServer)
-        @timeout          = timeout                       # Default timeout
         @r_descriptors.push(@server_socket)               # Add serverSocket to descriptors
 		@message_queues  = Hash.new()                     # Contains buffers for interaction with each individual client
         
@@ -64,14 +62,12 @@ class GameServer
 		@attempt          = 0                             # The attempt count that the player is on (between 0 & 2)
 		@action           = nil                           # Represents the action associated with the card played by the current player
 
-		############################ DEBUG ############################
 		@player_timer_on  = false
 		@player_start     = 0
-		@player_time      = 0
-		@inactive_wait    = 20                            # Default player response time
+		@inactive_wait    = 30                            # Default player response time - drop connection if exceeded
 
-		@player_strikes   = 5
-
+		############################ DEBUG ############################
+		@player_strikes_allowed   = 5
 		############################ TESTING ############################
 		@count = 0
 		############################ TESTING ############################
@@ -104,7 +100,7 @@ class GameServer
                 result = select(@r_descriptors, nil, nil, 0)
 				
                 if result != nil then
-                
+                puts "#{result}"
                     # Iterate over tagged 'read' descriptors
                     for socket in result[0]
                     
@@ -133,13 +129,6 @@ class GameServer
 				#############################################################
 				#                  Pre-Service Game State(s)                #
 				#############################################################
-
-#				puts "Game Timer On: " + @game_timer_on.to_s
-#				puts "Game In Progress: " + @game_in_progress.to_s				
-#				if (@game_timer_on)
-#					@current_time = Time.now().to_i
-#					puts "timer: " + ((@current_time-@start_time).abs()).to_s
-#				end #if
 				
 				################################################################
 				#TODO: move (all of) this checking into the beforeGame() method
@@ -147,42 +136,80 @@ class GameServer
 				player_check     = (min_check? && max_check?)   # check: player count 
 				game_in_progress = (@states.index(@state) > 0)  # check: game status
 				################################################################
-				
+puts "back..."				
+				# game in progress
 				if (game_in_progress) then
-					if (!player_check) then
-						@state = @states[0]
+
+					# check: minimum amount of players are connected
+					if (@players.getSize() == 1) then
+
+						# set game environment variables
+						@state = :beforegame
+						@game_timer_on = false
+
+						# log & notify player(s)
 						msg = ServerMsg.message("GG", @players.list())
 						log (msg)
 						broadcast(msg, nil)
-					else
-						#log("service: game in progress - check game state(s)")
-					end
-					if (@new_connection) then 
-						log("service: game in progress - add player to lobby & wait for next game")
-					end
-				else # game not in progress (before game)
 
+					end
+
+				else # game NOT in progress (before game)
+
+					#check: timer has started (min_check? and max_check? was satisfied)
 					if (@game_timer_on) then
-						@current_time = Time.now().to_i
-#						puts "timer: " + ((@current_time-@start_time).abs()).to_s
 
-						if ((@current_time-@start_time).abs() > @timeout) then      # start game
-							#puts "service: starting game"
-							@state = @states[1] ############################# <<<<<<<<<< start game
-							@game_timer_on = false                                  # turn timer off
-						end #if
+						# get: current timestamp
+						@current_time = Time.now().to_i
+						#puts "timer: " + ((@current_time-@start_time).abs()).to_s
+
+						#check: game timer expired
+						if ((@current_time-@start_time).abs() > @timeout) then  # start game
+							@state = :startgame                                  # state: start
+							@game_timer_on = false                               # turn timer off
+						end
+
+					#end
+
+					# check: min_check? & max_check? still satisfied
 					elsif (player_check) then
+puts "player-check:#{player_check}"
+						# check: activate timer if it isn't already running
 						if (!@game_timer_on) then
-							#puts "service: activate game timer"
-							@game_timer_on = true                                   # activate game timer
-							@start_time = Time.now().to_i                           # set start_time
-						end #if
+							@game_timer_on = true                               
+							@start_time = Time.now().to_i                       
+						end
+
+						# check: new connection - add to game
 						if (@new_connection) then
 							#puts "service: new connection & reset timer"
-							@start_time = Time.now().to_i                           # reset start_time
+							@start_time = Time.now().to_i                       # reset start_time
 						end #if
-					elsif (@new_connection) then              # player joining after game is full/game started
-						#puts "service: (initial) new connection"
+
+					# check: player connect after game capacity met
+					#elsif (@new_connection) then
+						# TODO: add to waiting
+					#else # player_check failed...
+
+						# check: insufficient players to play - turn game timer off (if it is on)
+					#	if(@game_timer_on) then
+					#		@game_timer_on = false
+					#	end
+					else # player_check failed & game is not in progress - wait for connections
+						  # or see if anyone is waiting from a previous game...
+
+						# check if players from waiting list can move to players list
+						while ( (max_check?) && (@waiting.getSize() > 0) ) do
+
+							# move player from one list to another
+							player = @waiting.getFront()
+							@players.add(player)
+
+							log("moving #{player.getName()} from waiting to players list")
+							log(@players.list())
+							log(@waiting.list())
+						end
+
 					end #if
 
 				end
@@ -190,16 +217,16 @@ class GameServer
 				# check: drop player due to inactivity
 				if (@state == :waitaction) then
 
-					@player_time = Time.now().to_i
-					if ((@player_time - @player_start).abs() > @inactive_wait) then
-
-						# log action
-						log("#{name}: connection dropped: exceeded max inactivity time")
+					current_time = Time.now().to_i
+					if ((current_time - @player_start).abs() >= @inactive_wait) then
 
 						# drop the player & continue
 						player = getPlayerFromPos(@current)
+						name = player.getName()
 						drop_connection(player)
-						move()
+
+						# log action
+						log("#{name}: connection dropped: exceeded max inactivity time")
 	
 					end
 
@@ -271,15 +298,14 @@ class GameServer
 		name = ""
 		if (x.kind_of? Player) then
 			socket = @players.getSocketFromPlayer(x)
-			socket.write(msg)
-			name = x.getName()
+			if socket != nil then
+puts "abot to try to write to #{x.getName()}: #{msg}"
+				socket.write(msg)
+			end
 		else
 			socket = @r_descriptors.find{ |s| s == x }
-###			socket = @w_descriptors.find{ |s| s == x }
 			if socket != nil then
 				socket.write(msg)
-				player = @players.getPlayerFromSocket(x)
-				name = player.getName()
 			else 
 				x.write(msg)
 			end
@@ -294,7 +320,6 @@ class GameServer
 
 		    # Iterate over all known sockets, writing to everyone except for
 		    # the omit_sock & the serverSocket
-		    ###@w_descriptors.each do |client_socket|
 		    @r_descriptors.each do |client_socket|
 		        
 		        if client_socket != @server_socket && client_socket != omit_sock then
@@ -323,6 +348,7 @@ class GameServer
 		# Create a queue for each connection
 		@message_queues[new_socket] = ""
 
+		# Special call to read (expecting JOIN message)
 		read(new_socket)
 
     end # accept_new_connection
@@ -334,11 +360,26 @@ class GameServer
 		# remove player
 		player = @players.getPlayerFromSocket(socket)
 
-		# TODO: put cards back in deck
-		cards = player.getCards()
-		@deck.put_back(cards)
+		# check: determine if player was in the game or waiting (remove from the appropriate list)
+		if player != nil then
 
-		@players.remove(player)
+			# put cards back in deck
+			cards = player.getCards()
+			@deck.put_back(cards)
+
+			# physically remove player from list
+			@players.remove(player)
+
+			# Broadcast updated player list to all players (player left)
+			msg = ServerMsg.message("PLAYERS", @players.list())
+			broadcast(msg, socket)		#broadcast(msg, socket)
+
+		else 
+
+			# physically remove player from list
+			@waiting.remove(player)
+
+		end
 
 		# update game/lobby count
 		@total_players = @total_players - 1
@@ -346,36 +387,63 @@ class GameServer
 	end
 
 	def close_connection(socket) 
-		
-		remove_player(socket)
 
-	    # Broadcast updated player list to all players (player left)
-		msg = ServerMsg.message("PLAYERS", @players.list())
-		broadcast(msg, socket)		#broadcast(msg, socket)
+		# store local reference of player
+		player_in_game = @players.getPlayerFromSocket(socket)
 
 		# handle descriptors
 		socket.close()
 		@r_descriptors.delete(socket)
 
+		#
+		# check: player's status
+		#
+
+		# check: player is waiting (not a player in the game)
+		if player_in_game == nil then
+
+			remove_player(player_in_game)
+
+		# check: player is playing in the game
+		else
+
+			remove_player(socket)
+
+			# check: if game in progress, move to next player
+			if ((@state != :beforegame) && (@state != :endgame)) then
+
+				# check: only call play if that is a possible action
+				if (@players.getSize() > 1) then
+
+					move()
+					play()
+
+				elsif (@players.getSize() == 1) then
+
+					puts "do something on this special 1 case?"
+
+				end
+
+			end
+
+		end
+
 	end # close_connection
 
 	def drop_connection(player)
-		socket = getSocketFromPlayer(player)
+		socket = @players.getSocketFromPlayer(player)
 		close_connection(socket)
 	end # drop_connection
 	
 	def read(socket)
 
 		while(true)
-
 			# read: input on clientSocket
 
 			# TODO: handle new lines?
 			begin
+				puts "just before read..."
 				data = socket.read(1)
-				#socket.flush()
-				#data.lstrip!
-				#data.rstrip!
 				data.chomp!
 			rescue Exception => e
 	            print e.backtrace
@@ -384,7 +452,7 @@ class GameServer
 			end
 
 			if data == nil then
-				puts "why nil?"
+				puts "error: nil valued 'read'"
 				exit(0)
 				return nil
 			end
@@ -393,15 +461,14 @@ class GameServer
 			if data == "" then
 				puts "dropped"
 				#dropped_connection()
+				exit (0)
 				return nil
 			end
 
 			# update: @message_queues[socket]
 			@message_queues[socket] = @message_queues[socket] + data
-			#p = @players.getPlayerFromSocket(socket)                          ###DEBUG
-			#if p != nil then
-				#puts "#{p.getName()}'s buffer on read:[#{@message_queues[socket]}]" ##DEBUG
-			#end
+
+			#puts "buffer <#{@message_queues[socket]}>" #TODO: remove (debug)
 
 			# validate: @message_queues[socket]
 			result = validate(data, socket) #@message_queues[socket]
@@ -410,18 +477,17 @@ class GameServer
 			if result == nil then          # invalid command/argument(s)
 				# do nothing
 			elsif result[0] == "drop" then # valid command, empty contents (drop)
-				break
+				#break
 			elsif result != nil then       # valid command with valid argument(s)
 
 				# process message
 				command = result[0].to_s
 				arguments = result[1].to_s
 				process(command, arguments, socket)
-				break
+				#break
+				return true
 			end
 
-			#break		
-		
 		end
 
 		return true
@@ -429,7 +495,9 @@ class GameServer
 	end #read
 
 	def process(command, args, socket)
-	
+
+puts "process: [#{command}|#{args}]"
+
 		if (command == "CHAT") then
 			handle_chat(args, socket)
 		elsif (command == "JOIN") then
@@ -444,11 +512,22 @@ class GameServer
 	end
 
 	def handle_chat(message, socket)
+
 		if socket != nil then
+
+			# check: does the 'chatter' belong to the players list?
 			playerName = @players.getPlayerFromSocket(socket).getName()
+
+			# check: player not found? check list of waiting players
+			if playerName == nil then
+				playerName = @waiting.getPlayerFromSocket(socket).getName()
+			end
+
 			msg = ServerMsg.message("CHAT", [playerName, message])
 			broadcast(msg, socket)
+
 		end
+
 	end
 
 	def handle_join(name, socket)
@@ -458,30 +537,55 @@ class GameServer
         result = name_validation(name)
         ########################################
 
-		puts result #TODO: remove - debug
-
 		# invalid join
 		if result == nil then
 			return
 		end
 
+		# check: valid results consist of an array of 1 element (the name)
 		if (result.size() == 1) then
-
-			# Create Player object & add to player list
-			name = result[0]
-			p = Player.new(name, socket)
-			@players.add(p)
 
 			# Update player counts
 			@total_players = @total_players + 1
 
-			# Inform player of acceptance
-		    msg = ServerMsg.message("ACCEPT",[name])		  
-			send(msg, socket)
-		   
-		    # Broadcast updated player list to all players
-			msg = ServerMsg.message("PLAYERS", @players.list())
-			broadcast(msg, nil)
+			# Create Player object & add to player list
+			name = result[0]
+			p = Player.new(name, socket)
+
+			# Add player to the appropriate list
+			if max_check? then
+
+				if (@state == :beforegame || @state == :endgame) then
+
+					# Inform player of acceptance
+					msg = ServerMsg.message("ACCEPT",[name])		  
+					send(msg, socket)
+
+					@players.add(p)
+					log("adding #{p.getName()} to players list")
+
+					# Broadcast updated player list to all players
+					# note: don't send list of waiting players!
+					msg = ServerMsg.message("PLAYERS", @players.list())
+					broadcast(msg, nil)
+				else
+
+					# Inform player they must wait
+					msg = ServerMsg.message("WAIT",[name])		  
+					send(msg, socket)
+
+					@waiting.add(p)
+					log("adding #{p.getName()} to waiting list - below max")
+				end
+
+			else
+				# Inform player they must wait
+				msg = ServerMsg.message("WAIT",[name])		  
+				send(msg, socket)
+
+				@waiting.add(p)
+				log("adding #{p.getName()} to waiting list - above max")
+			end		   
 
 		else
 
@@ -492,18 +596,35 @@ class GameServer
 			socket.close()
 
 		end
+
 	end
 
 	def handle_play(card, socket)
+
 		# play validation handled in game states - set player & card...
 
 		@playerPlayed = @players.getPlayerFromSocket(socket)          # type: Player
 		@card = Card.new(card[0].chr.upcase(), card[1].chr.upcase())  # type: Card
+
 	end
 
 	def handle_invalid(message, socket)
+
+		# check: find offending player
+		player = @players.getPlayerFromSocket(socket)
+
+		# check: if player is nil, player must be a waiting player
+		if player == nil then
+			player = @waiting.getPlayerFromSocket(socket)
+		end
+
+		# add strike to offending player
+		player.addStrike()
+
+		# inform the player
 		msg = ServerMsg.message("INVALID", [message])
 		send(msg, socket)
+
 	end
 
 	def validate(data, socket)
@@ -611,8 +732,6 @@ class GameServer
 
 	def startGame()
 		
-		#puts "state: start game" ###DEBUG
-
 		# send [STARTGAME|...] (report all active players for game play)
 		msg = ServerMsg.message("STARTGAME", @players.list())
 		broadcast(msg)
@@ -627,9 +746,6 @@ class GameServer
 
 	def play()
 	
-		#puts "state: play" ###DEBUG
-		#puts @players.to_s
-
 		player = getCurrentPlayer()
 
 		# send [DEAL|cards] if the last card played was a draw 2 or draw 4
@@ -640,13 +756,18 @@ class GameServer
 		end
 		@action = :none
 
-
 		# send [GO|CV]
-		msg = ServerMsg.message("GO", [top.to_s]) 
-		send(msg, player)
+		if player != nil then
+			msg = ServerMsg.message("GO", [top.to_s]) 
+			send(msg, player)
 
-		# (new state: waitForAction)
-		@state = :waitaction
+			# (new state: waitForAction)
+			@state = :waitaction
+			@player_start = Time.now().to_i
+		else
+			err("player is nil? check method 'play'")
+			exit 0
+		end
 
 	end
 
@@ -656,7 +777,7 @@ class GameServer
 		playerCurrent = getCurrentPlayer()
 		#puts "state: waitForAction - waiting for #{playerCurrent.getName()} to play!" ###DEBUG
 
-
+		# check: if playerPlayed is current player, process the played card
 		if (@playerPlayed == playerCurrent) then
 
 			# process the discard for validity
@@ -666,16 +787,22 @@ class GameServer
 			@playerPlayed = nil
 			@card = nil
 
-		end
+		# check: playerPlayed != current player - that's a strike!
+		elsif @playerPlayed != nil then
 
-		#
-		# if timeout:
-		#    - drop/skip player? (new state: postDiscard)
+			# penalize player playing out of turn
+			@playerPlayed.addStrike()
+
+			# check: player exceeded allowed strikes
+			if (@playerPlayed.getStrikes == @player_strikes_allowed) then
+				drop_connection(@playerPlayed)
+			end
+
+		end
 
 	end
 
 	def discard()
-		#puts "check: discard" ###DEBUG
 
 		card = Card.new()
 		cards = getCurrentPlayerHand()
@@ -810,24 +937,17 @@ class GameServer
 			#next player draws 4 cards
 		end
 
+		# set game environment variables
 		@attempt = 0
 		@state = :afterdiscard
 		afterDiscard()
+
 	end
 
 	def afterDiscard()
-		#puts "state: afterDiscard" ###DEBUG
-		log("\n-------------------------------------------------#{@count}")
-		log("#{@players.to_s}")
-		log("")
-		log(@deck.showDeck())
-		log("-----------------------------------------------------------")
-		@count = @count + 1
-
 
 		# send [PLAYED|playername,CV]
 		msg = ServerMsg.message("PLAYED", [@playerPlayed.getName(),@card.to_s])
-		#broadcast(msg, @playerPlayed.getSocket())
 		broadcast(msg, nil)
 
 		# check: [UNO|playername]
@@ -836,6 +956,20 @@ class GameServer
 			msg = ServerMsg.message("UNO", [@playerPlayed.getName()])
 			broadcast(msg, @playerPlayed.getSocket())
 		end 
+
+		#####################################################################
+		#####################################################################
+		#####################################################################
+		log("--------------------------------------------------------#{@count}")
+		log("Playing Players:\n#{@players.to_s}")
+		log("-----------------------------------------------------------")
+		log("#{@deck.showDeck()}")
+		log("Waiting Players: #{@waiting.list().join(",")}")
+		log("-----------------------------------------------------------")
+		@count = @count + 1
+		#####################################################################
+		#####################################################################
+		#####################################################################
 
 		# check: end of game
 		result = gameEndCheck()
@@ -859,6 +993,19 @@ class GameServer
 		# reset player cards & the game deck
 		full_reset()
 
+		# check if players from waiting list can move to players list
+log("check waiting queue before moving on...")
+		while ( (max_check?) && (@waiting.getSize() > 0) ) do
+
+			# move player from one list to another
+			player = @waiting.getFront()
+			@players.add(player)
+
+			log("moving #{player.getName()} from waiting to players list (end of full game)")
+			log(@players.list())
+			log(@waiting.list())
+		end
+log("done checking queue")
 		# reset game state
 		@state = :beforegame
 	end
@@ -1014,6 +1161,13 @@ class GameServer
 	end # getPlayerHand
 
 	#
+	# return a player based on their position 
+	#
+	def getPlayerFromPos(pos)
+		return @players.getList().at(pos)
+	end
+
+	#
 	# Game End Check: check if the player that just played has won
 	#
 	def gameEndCheck()
@@ -1046,7 +1200,7 @@ class GameServer
 	# Max Check: return boolean value indicating if there are more players than the maximum allowed
 	#
 	def max_check?()
-		return @players.getSize() <= @max
+		return @players.getSize() <= (@max - 1)
 	end # max
 
 	#
@@ -1054,7 +1208,8 @@ class GameServer
 	#
 	def full_reset()
 		@deck = Deck.new()
-		@players.getList().each{ |player| player.reset() }
+		@current = 0
+		@players.getList().each{ |player| player.reset!() }
 	end
 
 end #GameServer

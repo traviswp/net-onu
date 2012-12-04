@@ -1,10 +1,11 @@
-#!/usr/local/bin/ruby
+#!/usr/bin/env ruby
 
 class Player
 
 	attr_reader :name
 	attr_reader :socket
 	attr_reader :cards
+	attr_reader :strikes
 	attr_reader :games_won
 	attr_reader :games_played
 
@@ -16,9 +17,10 @@ class Player
         @name         = name
 		@socket       = socket
 		@cards        = []
-		@card         = Card.new()
+		@strikes      = 0
         @games_won    = 0
         @games_played = 0
+		@card         = Card.new()
     end #initialize
 
 	#
@@ -35,6 +37,15 @@ class Player
 
 	def getCards()
 		return @cards
+	end
+
+	def getStrikes()
+		return @strings
+	end
+
+	def addStrike()
+puts "addin a strike to #{name}...(I'm in the player class if you want to delete this message...)"
+		@strikes = @strikes + 1
 	end
 
 	def getCardCount()
@@ -134,41 +145,25 @@ class Player
 		end
 	end
 
-#	def playing?()
-#		return
-#	return 
-
-#	def waiting?()
-#		return
-#	return 
-
 	def getGamesWon()
 		return @games_won
 	end #getGamesWon
 
-	def setGamesWon()
+	def incGamesWon()
 		@games_won = @games_won + 1
-	end #setGamesWon
+	end #incGamesWon
 
 	def getGamesPlayed()
 		return @games_played
 	end #getGamesPlayed
 
-	def setGamesPlayed()
+	def incGamesPlayed()
 		@games_played = @games_played + 1
-	end #setGamesPlayed
-
-	def reset()
-		@cards = []
-	end
+	end #incGamesPlayed
 
 	#
 	# Game Stats & Basic Output
 	#
-
-    def getStats()
-        stats = "After #{@games_played} games, you have won #{@games_won}.\n" 
-    end #getStats
     
     def to_s()
 		str = "Cards: "
@@ -176,7 +171,6 @@ class Player
 			str += c.to_s + ","
 		}
 		str[-1] = ""
-		#str += getStats()
         return str
     end #toString
     

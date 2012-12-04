@@ -1,4 +1,4 @@
-#!/usr/local/bin/ruby
+#!/usr/bin/env ruby
 
 require 'Card'
 
@@ -61,13 +61,48 @@ class Deck
 	end #shuffle
 
 	def replenish!(n)
-		if (size() < n) then
-			sleep(3)
-			puts "MUST REPLENISH DECK!!!"
-			@cards = @discard_pile
+
+		if (size() <= n) then
+
+			# store remaining cards on the playing deck
+			tmp = @cards
+
+			# store the top card of the discard pile
+			top = @top_card
+			@discard_pile.delete(@top_card)
+			puts "top card is #{top}"
+
+			# revert any colored wilds/wild-draw-fours back to non-colored cards
+			@discard_pile.each{ |c|
+				
+				# replace: wild
+				if c.getIdentifier == "W" then
+					@discard_pile.delete(c)
+					@discard_pile << Card.new("N","W")
+				end
+
+				# replace: wild-draw-four
+				if c.getIdentifier == "F" then
+					@discard_pile.delete(c)
+					@discard_pile << Card.new("N","F")
+				end
+			}
+
+			# reset the playing deck
+			@cards = @discard_pile + tmp
+
+			# reset the discard pile
 			@discard_pile = []
+
+			# reshuffle the playing deck
 			shuffle()
+
+			# reset the top card from before the replenish
+			@discard_pile.unshift(top)
+			setTopCard() 
+
 		end
+
 	end #replenish
 
 	# deal 
@@ -169,7 +204,7 @@ class Deck
 			l = l + "#{c},"
 		}
 		l[-1] = ""
-		l = l + " -- [#{@discard_pile.size()}]\n"
+		l = l + " -- [#{@discard_pile.size()}]"
 		#puts l + " -- [#{@discard_pile.size()}]"
 
 		return l

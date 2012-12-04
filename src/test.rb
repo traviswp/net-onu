@@ -1,4 +1,4 @@
-#!/usr/local/bin/ruby
+#!/usr/bin/env ruby
 
 require 'Card'
 require 'Deck'
@@ -9,9 +9,34 @@ require 'ClientMsg'
 
 include ServerMsg
 
-def test_serverMsg()
+$cards = [
 
-end #test_serverMsg
+		# Regular cards (color: R,G,Y,B & number: 0-9)
+		"R0","R1","R1","R2","R2","R3","R3","R4","R4","R5","R5","R6","R6","R7","R7","R8","R8","R9","R9",
+		"G0","G1","G1","G2","G2","G3","G3","G4","G4","G5","G5","G6","G6","G7","G7","G8","G8","G9","G9",
+		"Y0","Y1","Y1","Y2","Y2","Y3","Y3","Y4","Y4","Y5","Y5","Y6","Y6","Y7","Y7","Y8","Y8","Y9","Y9",
+		"B0","B1","B1","B2","B2","B3","B3","B4","B4","B5","B5","B6","B6","B7","B7","B8","B8","B9","B9",
+
+		# Action cards (color: R,G,Y,B & action: D (draw two), S (skip), U (reverse)
+		"RD","RD","RS","RS","RU","RU",
+		"GD","GD","GS","GS","GU","GU",
+		"YD","YD","YS","YS","YU","YU",
+		"BD","BD","BS","BS","BU","BU",
+
+		# Wild cards (four regular wilds & four wild draw-fours)
+		"NW","NW","NW","NW",
+		"NF","NF","NF","NF",				
+]
+
+def test_checkDeck()
+
+	s1 = "Y4,G6,GS,GD,G5,G6,G8,G9,G1,G9,GD,GU,BU,B5,BW,Y6,Y3,Y2,Y9,YS,Y6,R6,R5,RS,R9,R7,Y7,Y2,B2,BS,B1,B6,B4,B9,B9,BD,YD,YD,YU,Y9,R9,R2,R6,R3,R3,G3,GF,G4,G2,G8,G0,G1,GU,G3,GS,G5,G7,GW,RU,BU,BS,BW,Y5,Y1,YS,Y7,Y8,Y4,Y0,R0,RD,R1,R2,G2,G4,G7,GF,B3,B2,BD,BF,BF,GW,B8"
+	a = s1.split(',')
+
+	s2 = "G5,G2,R1,GU,B6,GU,Y4,B1,Y6,Y1,R5,BF,G1,G7,G8,Y9,YD,Y2,NW,B9,YS,BS,B3,B4,G4,Y7,R2,G5,R7,G1,YU,G6,G8,YD,BS,G9,R6,Y9,NF,B9,R3,BU,R6,BU,RS,B8,NW,B2,Y0,R3,NF,GD,R2,G3,NF,NW,RU,BD,RD,YS,GS,Y2,Y6,G7,Y8,G3,GS,Y7,GD,G4,R9,BD,R9,NW,R0,G9,G0,Y3,Y5,B2,G2,G6,B5"
+	b = s2.split(',')
+
+end #test_checkDeck
 
 def test_Card_isValid()
 

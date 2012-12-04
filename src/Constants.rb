@@ -1,4 +1,4 @@
-#!/usr/local/bin/ruby
+#!/usr/bin/env ruby
 
 #
 # Constants
@@ -7,11 +7,11 @@
 module Constants
 
 	#
-	# Defaults
+	# Mutual Defaults
 	#
 
-	TIMEOUT             = 3
-	PORT                = 36725
+	TIMEOUT             = 5
+	PORT                = 36743
 	USERNAME            = 'player'
 	HOSTNAME            = 'localhost'
 
@@ -20,9 +20,9 @@ module Constants
 	#
 
 	MIN                 = 2
-	MAX                 = 10	
+	MAX                 = 3	
 	LOBBY               = 25
-	PLAYER_TIMEOUT      = 30
+	PLAYER_TIMEOUT      = 1000
 
 	#
 	# Client Globals

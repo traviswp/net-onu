@@ -1,4 +1,4 @@
-#!/usr/local/bin/ruby
+#!/usr/bin/env ruby
 
 # Sockets are in the standard library
 require 'ServerClass.rb'

@@ -1,4 +1,4 @@
-#!/usr/local/bin/ruby
+#!/usr/bin/env ruby
 
 require File.expand_path("./PlayerClass.rb")
 
@@ -12,7 +12,6 @@ class PlayerList
 
     def initialize()
         @player_list = Array.new()
-		#@number_of_players = 0
     end
     
 	#
@@ -25,10 +24,10 @@ class PlayerList
 	def getList()
 		return @player_list
 	end # getPlayers
-	
-	def getPlayerFromPos(pos)
-		rp = @players_list.at(pos)
-	end
+
+	def getFront()
+		return @player_list.shift()
+	end # getFront
 
 	def getPlayerFromSocket(socket)
 		rp = @player_list.find { |player| player.socket == socket }

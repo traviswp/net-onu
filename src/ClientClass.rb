@@ -1,4 +1,4 @@
-#!/usr/local/bin/ruby
+#!/usr/bin/env ruby
 
 # Sockets are in the standard library
 require 'socket' 
@@ -347,6 +347,9 @@ end
 			# server isn't up
             puts "connection refused: could not connect to #{@hostname} on port #{@port}."
             exit 0
+        rescue Exception => e
+			puts "connection error. see client `connect()` "
+			exit 0
         rescue SystemExit => e
             # On a system exit, exit gracefully
         end # error handling block
@@ -650,12 +653,22 @@ end
 	# gg
 	def handle_gg(name)
 
+		# player has successfully completed a game - increment count
+		@player.incGamesPlayed()
+
+		# if this player won, increment their 'win' count
+		if name == @player.getName() then
+			@player.incGamesWon()
+		end
+
+		# display results
 		show_win(name)
 		
 		# state: lobby
 		@state = :lobby 
 
 		@player.reset!()
+
 
 #puts "WIN!!!"
 #exit(0)
@@ -767,7 +780,6 @@ end
 
 		@clientName = name
 		@player = Player.new(@clientName, 0)
-
 
 		# handle auto even if we are forced to wait
 		if (@auto) then
@@ -975,6 +987,10 @@ end
 
 		system ("clear")
 
+		# game stats
+		p = @player.getGamesPlayed()
+		w = @player.getGamesWon()
+
 		if name == "" then
 			puts "-----------------------------------------------------------------"
 			puts "|"+"Sorry, The Game Ended Due To Insufficient Players...".center(63)+"|"
@@ -982,14 +998,14 @@ end
 			log("server: game ended due to insufficient players")
 		elsif name == @player.getName() then
 			puts "-----------------------------------------------------------------"
-			puts "|"   +   "Congratulations, #{name}! You Won!".center(63)  +   "|"
+			puts "|"+ "Congratulations, #{name}! You Won! (#{w}/#{p})".center(63) +"|"
 			puts "-----------------------------------------------------------------"
-			log("congratulations, player won!: [GG|#{name}]")
+			log("congratulations, player won! (#{w}/#{p}): [GG|#{name}]")
 		else
 			puts "-----------------------------------------------------------------"
-			puts "|"         +       "#{name} Wins!".center(63)      +           "|"
+			puts "|"        +  "#{name} Wins! (#{w}/#{p})".center(63)  +          "|"
 			puts "-----------------------------------------------------------------"
-			log("player #{name} won!: [GG|#{name}]")
+			log("player #{name} won! (#{w}/#{p}): [GG|#{name}]")
 		end
 
 	end
