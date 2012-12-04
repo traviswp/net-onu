@@ -2,9 +2,6 @@
                                               TODO List:
 ===============================================================================================================
 
-- Server: change the way messages are written. Buffer outgoing messages into a list of descriptors so that
-          the call to select doesn't hang during auto play
-
 - Server: Implement a strike system for players that are playing (5 strikes and boot?).
 
 - Client: AI (still needs some work...)
