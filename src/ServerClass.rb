@@ -300,23 +300,35 @@ puts "player-check:#{player_check}"
 	# that client
 	#
 	def send(msg, x)
-
 		name = ""
 		if (x.kind_of? Player) then
 			socket = @players.getSocketFromPlayer(x)
 			if socket != nil then
-				socket.write(msg)
+				begin
+					socket.write(msg)
+				rescue Exception => e
+					err("There was a write error in 'send'. message = #{msg} & socket = #{socket}")
+					sleep(5)
+				end
 			end
 		else
 			socket = @r_descriptors.find{ |s| s == x }
 			if socket != nil then
-				socket.write(msg)
+				begin
+					socket.write(msg)
+				rescue Exception => e
+					err("There was a write error in 'send'. message = #{msg} & socket = #{socket}")
+					sleep(5)
+				end
 			else 
-				x.write(msg)
-			end
-			
-        end
-
+				begin
+					x.write(msg)
+				rescue Exception => e
+					err("There was a write error in 'send'. message = #{msg} & socket = #{socket}")
+					sleep(5)
+				end
+			end			
+        end #if
 	end # send
 
     def broadcast(msg, omit_sock = nil)
@@ -328,7 +340,14 @@ puts "player-check:#{player_check}"
 		    @r_descriptors.each do |client_socket|
 		        
 		        if client_socket != nil && client_socket != @server_socket && client_socket != omit_sock then
-		            client_socket.write(msg)
+
+					begin
+			            client_socket.write(msg)
+					rescue Exception => e
+						err("There was a write error in 'broadcast'. message = #{msg} & socket = #{client_socket}")
+						sleep(5)
+					end
+
 		        end #if
 		        
 		    end #each
@@ -968,6 +987,7 @@ puts "process: [#{command}|#{args}]"
 		#####################################################################
 		log("--------------------------------------------------------#{@count}")
 		log("Playing Players:\n#{@players.to_s}")
+		@players.getList().each{ |p| log("#{p.getSocket()}") }
 		log("-----------------------------------------------------------")
 		log("#{@deck.showDeck()}")
 		log("Waiting Players: #{@waiting.list().join(",")}")
