@@ -12,6 +12,8 @@
 
 - Fix how wilds are handled at the end of a round/when a deck is "replenished"
 
+- Deck: when the deck is replenished, the same top card should still be on the top after the reshuffle
+
 ===============================================================================================================
                                               Complete:
 ===============================================================================================================
