@@ -10,13 +10,13 @@
 
 - Server: error handling - server should NOT raise exceptions due to client
 
-- Fix how wilds are handled at the end of a round/when a deck is "replenished"
-
-- Deck: when the deck is replenished, the same top card should still be on the top after the reshuffle
-
 ===============================================================================================================
                                               Complete:
 ===============================================================================================================
+
+- Fix how wilds are handled at the end of a round/when a deck is "replenished"
+
+- Deck: when the deck is replenished, the same top card should still be on the top after the reshuffle
 
 - Server: Implement a timer for players that are playing - if they don't respond with a valid play 
           (30 seconds or so) then drop that player from the game.
