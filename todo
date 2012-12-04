@@ -10,6 +10,8 @@
 
 - Server: error handling - server should NOT raise exceptions due to client
 
+- Fix how wilds are handled at the end of a round/when a deck is "replenished"
+
 ===============================================================================================================
                                               Complete:
 ===============================================================================================================
