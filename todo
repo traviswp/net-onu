@@ -2,13 +2,13 @@
                                               TODO List:
 ===============================================================================================================
 
+- Server: add "waiting"
+
 - Server: Implement a strike system for players that are playing (5 strikes and boot?).
 
 - Client: AI (still needs some work...)
 
 - Server: error handling - server should NOT raise exceptions due to client
-
-- Server: add "waiting"
 
 ===============================================================================================================
                                               Complete:
