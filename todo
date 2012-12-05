@@ -4,13 +4,13 @@
 
 - Server: Implement a strike system for players that are playing (5 strikes and boot?).
 
-- Server: Make sure that lobby works (drop players if capacity exceeded)
-
 - Server: error handling - server should NOT raise exceptions due to client
 
 ===============================================================================================================
                                               Complete:
 ===============================================================================================================
+
+- Server: Make sure that lobby works (drop players if capacity exceeded)
 
 - Server: add "waiting"  <-- (keep your eye on this one...)
 
