@@ -2,6 +2,8 @@
                                               TODO List:
 ===============================================================================================================
 
+- Server: make sure to search the @waiting players list when doing name validation as well!!!
+
 - Server: Implement a strike system for players that are playing (5 strikes and boot?).
 
 - Server: error handling - server should NOT raise exceptions due to client
