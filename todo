@@ -2,8 +2,6 @@
                                               TODO List:
 ===============================================================================================================
 
-- Server: add "waiting"
-
 - Server: Implement a strike system for players that are playing (5 strikes and boot?).
 
 - Client: AI (still needs some work...)
@@ -13,6 +11,8 @@
 ===============================================================================================================
                                               Complete:
 ===============================================================================================================
+
+- Server: add "waiting"  <-- (keep your eye on this one...)
 
 - Fix how wilds are handled at the end of a round/when a deck is "replenished"
 
