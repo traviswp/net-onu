@@ -64,7 +64,7 @@ class GameServer
 
 		@player_timer_on  = false
 		@player_start     = 0
-		@inactive_wait    = 30                            # Default player response time - drop connection if exceeded
+		@inactive_wait    = Constants::PLAYER_TIMEOUT     # Default player response time - drop connection if exceeded
 
 		############################ DEBUG ############################
 		@player_strikes_allowed   = 5
@@ -136,11 +136,11 @@ class GameServer
 				player_check     = (min_check? && max_check?)   # check: player count 
 				game_in_progress = (@states.index(@state) > 0)  # check: game status
 				################################################################
-puts "<#{@players.getSize()}><#{@waiting.getSize()}> player-check: [#{player_check}: <#{min_check?}><#{max_check?}>] | game_in_progress: [#{game_in_progress}]"
+#puts "<#{@players.getSize()}><#{@waiting.getSize()}> player-check: [#{player_check}: <#{min_check?}><#{max_check?}>] | game_in_progress: [#{game_in_progress}]"
 
 				# game in progress
 				if (game_in_progress) then
-#puts "game in progress"
+
 					# check: minimum amount of players are connected
 					if (@players.getSize() == 1) then
 
@@ -156,7 +156,6 @@ puts "<#{@players.getSize()}><#{@waiting.getSize()}> player-check: [#{player_che
 					end
 
 				else # game NOT in progress (before game)
-#puts "game NOT in progress"
 
 					#check: timer has started (min_check? and max_check? was satisfied)
 					if (@game_timer_on) then
@@ -175,7 +174,7 @@ puts "<#{@players.getSize()}><#{@waiting.getSize()}> player-check: [#{player_che
 
 					# check: min_check? & max_check? still satisfied
 					elsif (player_check) then
-puts "player-check:#{player_check}"
+
 						# check: activate timer if it isn't already running
 						if (!@game_timer_on) then
 							@game_timer_on = true                               
@@ -188,19 +187,9 @@ puts "player-check:#{player_check}"
 							@start_time = Time.now().to_i                       # reset start_time
 						end #if
 
-					# check: player connect after game capacity met
-					#elsif (@new_connection) then
-						# TODO: add to waiting
-					#else # player_check failed...
-
-						# check: insufficient players to play - turn game timer off (if it is on)
-					#	if(@game_timer_on) then
-					#		@game_timer_on = false
-					#	end
 					else # player_check failed & game is not in progress - wait for connections
 						  # or see if anyone is waiting from a previous game...
-#puts "can we add players to game from waiting list? #{max_check?} | #{@waiting.getSize()}"
-						# check if players from waiting list can move to players list
+     					  # check if players from waiting list can move to players list
 
 						while ( (@players.getSize() + 1 <= @max) && (@waiting.getSize() > 0) ) do
 
@@ -209,7 +198,7 @@ puts "player-check:#{player_check}"
 							@players.add(player)
 
 							log("moving #{player.getName()} from waiting to players list")
-							sleep(2)
+sleep(2)
 							log(@players.list())
 							log(@waiting.list())
 						end
@@ -308,7 +297,7 @@ puts "player-check:#{player_check}"
 					socket.write(msg)
 				rescue Exception => e
 					err("There was a write error in 'send'. message = #{msg} & socket = #{socket}")
-					sleep(5)
+sleep(5)
 				end
 			end
 		else
@@ -318,14 +307,14 @@ puts "player-check:#{player_check}"
 					socket.write(msg)
 				rescue Exception => e
 					err("There was a write error in 'send'. message = #{msg} & socket = #{socket}")
-					sleep(5)
+sleep(5)
 				end
 			else 
 				begin
 					x.write(msg)
 				rescue Exception => e
 					err("There was a write error in 'send'. message = #{msg} & socket = #{socket}")
-					sleep(5)
+sleep(5)
 				end
 			end			
         end #if
@@ -345,7 +334,7 @@ puts "player-check:#{player_check}"
 			            client_socket.write(msg)
 					rescue Exception => e
 						err("There was a write error in 'broadcast'. message = #{msg} & socket = #{client_socket}")
-						sleep(5)
+sleep(5)
 					end
 
 		        end #if
@@ -1028,7 +1017,7 @@ log("before <#{@players.getSize()}><#{max_check?}><#{@waiting.getSize()}>")
 			@players.add(player)
 
 			log("moving #{player.getName()} from waiting to players list (end of full game)")
-			sleep(2)
+sleep(2)
 			log(@players.list())
 			log(@waiting.list())
 log("after <#{@players.getSize()}><#{max_check?}><#{@waiting.getSize()}>")

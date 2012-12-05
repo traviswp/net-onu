@@ -20,9 +20,9 @@ module Constants
 	#
 
 	MIN                 = 2
-	MAX                 = 3	
+	MAX                 = 10
 	LOBBY               = 25
-	PLAYER_TIMEOUT      = 1000
+	PLAYER_TIMEOUT      = 30
 
 	#
 	# Client Globals

@@ -286,19 +286,13 @@ class GameClient
 					# TODO: Are you deleting wilds and wild draw fours correctly?
 					pos = @player.discard(c)
 
-if pos != nil then
-	puts "MY CARD #{c} at position #{pos}"
-else
-	puts "MY CARD #{c} at position NIL"
-end
+					play = ClientMsg.message("PLAY",[card])
 
-					input = ClientMsg.message("PLAY",[card])
-
-					@clientSocket.write(input)
+					@clientSocket.write(play)
 
 					name = @player.getName()
 					log("#{name} #{@player}")
-					log("my turn: (#{@state}) - #{name} playing a card: " + input)
+					log("my turn: (#{@state}) - #{name} playing a card: " + play)
 
 					show_play(c,"")
 				end
@@ -463,12 +457,6 @@ end
 				# TODO: Are you deleting wilds and wild draw fours correctly?
 				pos = @player.discard(myCard)
 
-if pos != nil then
-	puts "MY CARD #{myCard} at position #{pos}"
-else
-	puts "MY CARD #{myCard} at position NIL"
-end
-
 				show_play("#{myCard}","")
 
 				# Inform client of play
@@ -577,6 +565,7 @@ end
 		#
 
 		#puts command  ## DEBUG
+
 
 		if (command == "ACCEPT") then
 			handle_accept(args)
