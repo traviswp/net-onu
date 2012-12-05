@@ -2,17 +2,17 @@
                                               TODO List:
 ===============================================================================================================
 
-- Server: add "waiting"
-
 - Server: Implement a strike system for players that are playing (5 strikes and boot?).
-
-- Client: AI (still needs some work...)
 
 - Server: error handling - server should NOT raise exceptions due to client
 
 ===============================================================================================================
                                               Complete:
 ===============================================================================================================
+
+- Server: add "waiting"  <-- (keep your eye on this one...)
+
+- Client: AI (still needs some work...)
 
 - Fix how wilds are handled at the end of a round/when a deck is "replenished"
 
