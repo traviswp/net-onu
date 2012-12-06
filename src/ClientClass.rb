@@ -33,7 +33,7 @@ class GameClient
 		location = "../logs/"
 		filename = @clientName + "_log.txt"     # Log file name (client name + '_log.txt'
 		file = location+filename
-		@log = File.new(file,"w+")          # Log file
+		@log = File.new(file,"w+")             # Log file
 
         # parameters for select
         #@timeout      = 1                       # Client timeout for select call <== Do I need this? 
@@ -43,6 +43,7 @@ class GameClient
 		@player       = nil                    # Player variable for gameplay
 		@attempt      = 0                       # Player attempts
 		@top          = nil                    # Top card of deck
+		@playing?     = false                   # Boolean representing if player is actually playing in the game
 
 		# variables for game play tracking/output
 		@players_list   = []                    # Contains all the members of a game
@@ -296,6 +297,7 @@ class GameClient
 
 					show_play(c,"")
 				end
+
 				return
 
 			end
@@ -313,7 +315,10 @@ class GameClient
 			end
 
 			input.chomp!
-			puts "sorry, '#{input}' is not a recognized action. try typing 'help'."
+			#puts "sorry, '#{input}' is not a recognized action. try typing 'help'."
+
+			@clientSocket.write(input)
+		    log("invalid user entry: " + input)
 
 		end
 
@@ -658,9 +663,6 @@ class GameClient
 
 		@player.reset!()
 
-
-#puts "WIN!!!"
-#exit(0)
 	end
 
 	# go
@@ -678,7 +680,7 @@ class GameClient
 	# invalid
 	def handle_invalid(msg)
         err("server-error: #{msg}")
-		puts("server: #{msg}")
+		puts("server-error: #{msg}")
 	end
 
 	# played
@@ -789,11 +791,11 @@ class GameClient
 	def checkPlayable(card)
 
 		# check: currently this player's turn
-		if (@state != :play) then
-			log("it is not your turn to play!")
-			puts "it is not your turn to play!"
-			return false
-		end
+		#if (@state != :play) then
+		#	log("it is not your turn to play!")
+		#	puts "it is not your turn to play!"
+		#	return false
+		#end
 
 		# check: type
 		if (!card.kind_of?(String)) then
@@ -947,7 +949,7 @@ class GameClient
 
 	def show_play(card, name)
 		puts "-----------------------------------------------------------------"
-		puts "|"        +      "#{name} Played: [#{card}]".center(63)    +          "|"
+		puts "|"      +    "#{name} Played: [#{card}]".center(63)    +        "|"
 		puts "-----------------------------------------------------------------"
 	end
 

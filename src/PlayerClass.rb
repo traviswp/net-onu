@@ -40,7 +40,7 @@ class Player
 	end
 
 	def getStrikes()
-		return @strings
+		return @strikes
 	end
 
 	def addStrike()
@@ -54,6 +54,7 @@ puts "addin a strike to #{name}...(I'm in the player class if you want to delete
 
 	def reset!()
 		@cards = []
+		@strikes = 0
 	end
 
 	def discard(card)
