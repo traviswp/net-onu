@@ -85,6 +85,9 @@ class GameServer
         @debug_flag = debug_flag
         msg = "UNO Game Server started on port #{@port}" 
         puts msg 
+        if @debug_flag then
+            puts "starting server with debug messages on..."
+        end
         log(msg)
 
     end #initialize
@@ -94,6 +97,9 @@ class GameServer
         begin # error handling block
 
             while true
+
+#print "press enter to proceed"
+#STDIN.getc
 
 				#############################################################
 				# Service Connections/Disconnections & Process Client Input #
@@ -283,7 +289,9 @@ class GameServer
             end #while
 
         rescue Interrupt
-            puts "\nserver application interrupted: shutting down..."
+            msg = "\nserver application interrupted: shutting down..." 
+            @log.syswrite(msg)
+            puts msg
             exit 0
         rescue Exception => e
             puts 'Exception: ' + e.message()
@@ -304,7 +312,6 @@ class GameServer
 	# Debug messages (verbose mode)
 	#
 	def debug(msg)
-		# TODO: Implement - start server with flag - move all debug statements to use this method
         if @debug_flag then
             puts "debug: #{msg}"
         end
@@ -569,6 +576,7 @@ class GameServer
 				data = socket.read_nonblock(128)
 				data.gsub!(/\r/, "")
 				data.gsub!(/\n/, "")
+                data.lstrip!
 			rescue Exception => e
 	            #print e.backtrace
 				#exit(0)
@@ -619,9 +627,12 @@ class GameServer
 	#
 	def buffer_clear(x)
 
+        command = "none"
+        arguments = "none"
 		begin
 
 			# validate: @message_queue[socket] (get the player's socket)
+            @message_queues[x].lstrip!
 			result = validate(x)
 
 			# check: complete message from server?
@@ -636,7 +647,7 @@ class GameServer
 
 		rescue Exception => e
 
-			err("method 'buffer clear': error processing: [@{command}|#{arguments}]")
+			err("method 'buffer clear': error processing: [#{command}|#{arguments}]")
 
 		end
 
@@ -654,23 +665,41 @@ class GameServer
 		# validating contents of the @message_queues[socket] #
 		######################################################
 
+
+        #debug("buffer to validate on: #{@message_queues[socket]}")
+
 		# check the beginning of the string:
 		# remove anything up until you find the first '['
 		re = /\A([^\[]*)[^\[\]]?/i
 		m = @message_queues[socket].match re
 
 		if m != nil && !m[0].empty? then
-			msg = "'#{m[0]}' is an invalid message"
+			msg = "(0) '#{m[0]}' is an invalid message"
 			@message_queues[socket].sub!(/\A([^\[]*)[^\[\]]?/i, "")
 			handle_invalid(msg, socket)
+            return nil
 		else
-			#valid
+
+            re = /([^\[]*?)\[/i
+            m = @message_queues[socket].match re
+
+            if m != nil && $1 != "" then
+
+                # invalid
+                if $1.lstrip! != "" then
+                    @message_queues[socket].sub!(/([^\[]*?)\[/i, "")
+			        handle_invalid("(1) '#{$1}' is an invalid message", socket)
+                    return nil 
+                end
+
+            end
+
 		end
 		
 		# match:
 		#    command   (letters only; 2-9 characters)
 		#    arguments (anything up to the first ']' character)
-		re = /\[([a-zA-Z]{2,9})\|(.*?)\]/i
+		re = /\[([a-zA-Z]{0,10})\|(.*?)\]/i
 		m = @message_queues[socket].match re
 
 		# upon matching: (1) set command, (2) set command info, and (3) remove
@@ -681,7 +710,18 @@ class GameServer
 			@message_queues[socket].sub!(/\[([a-zA-Z]{2,9})\|(.*?)\]/i, "")
 		else
 
-			return nil
+            re = /\[([^\[\]]*)\]/i
+            m = @message_queues[socket].match re
+
+            if m != nil then
+
+                # invalid: [ invalid contents ]
+			    @message_queues[socket].sub!( /\[([^\[\]]*)\]/i, "")
+		        handle_invalid("(1) '[#{$1}]' is an invalid message", socket)
+
+            end
+
+            return nil
 
 		end
 
@@ -692,7 +732,7 @@ class GameServer
 		if !(ServerMsg.valid?(command)) then
 
 			# invalid command
-			msg = "@{command} is an invalid command"
+			msg = "`#{command}` is an invalid command"
 			handle_invalid(msg, socket)
 			return nil
 
@@ -715,7 +755,7 @@ class GameServer
 	def process(command, args, socket)
 
 		##################################### DEBUG
-		log("received: [#{command}|#{args}]")
+		log("`process` received: [#{command}|#{args}]")
 		##################################### DEBUG
 
 		if (command == "CHAT") then
@@ -805,7 +845,7 @@ class GameServer
 				# error (no player object)
 				if socket != nil then
 
-					msg = "CHAT error: #{e.message()}: send a valid JOIN message before chatting. disconection..."
+					msg = "CHAT error: #{e.message()}: send a valid JOIN message before chatting. disconecting..."
 					log(msg)
 					msg = ServerMsg.message("INVALID", [msg])
 					send(msg, socket)
@@ -975,6 +1015,8 @@ class GameServer
 				# drop the connection
 				drop_connection(player)
 
+                return
+
 			end
 
 			# inform the player
@@ -1024,12 +1066,20 @@ class GameServer
 
 	def startGame()
 
+        #server output
+        puts
         puts "Game Starting..."
+        puts
+
         if @players.getSize() > 0 then
-            puts "Players: #{@players.list().join(", ")}"		
+            msg= "Players: #{@players.list().join(", ")}"
+            puts msg
+            log(msg)
         end
         if @waiting.getSize() > 0 then
-            puts "Players Waiting: #{@waiting.list().join(", ")}"		
+            msg = "Players Waiting: #{@waiting.list().join(", ")}"
+            puts msg
+            log(msg)
         end
 
 		# send [STARTGAME|...] (report all active players for game play)
@@ -1243,11 +1293,17 @@ class GameServer
 		msg = ServerMsg.message("PLAYED", [@playerPlayed.getName(),@card.to_s])
 		broadcast(msg, nil)
 
+        #server output
+        puts "#{@playerPlayed.getName()} played '#{@card}'"
+
 		# check: [UNO|playername]
 		result = unoCheck()
 		if (result)
 			msg = ServerMsg.message("UNO", [@playerPlayed.getName()])
 			broadcast(msg, @playerPlayed.getSocket())
+
+            #server output
+            puts "#{@playerPlayed.getName()} said 'UNO!'"
 		end 
 
 		#####################################################################
@@ -1276,7 +1332,14 @@ class GameServer
 
 	def endGame(winnerName)
 
-        puts "Game Finished. Player #{winnerName} Won!"
+        #server output
+        if winnerName == nil or winnerName == "" then
+            puts
+            puts "Game Finished with no winner."
+        else
+            puts
+            puts "Game Finished. Player #{winnerName} Won!\n"
+        end
 
 		# send [GG|winning_player_name]
 		msg = ServerMsg.message("GG",[winnerName])
