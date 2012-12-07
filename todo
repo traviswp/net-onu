@@ -2,13 +2,17 @@
                                               TODO List:
 ===============================================================================================================
 
-- Server: Implement a strike system for players that are playing (5 strikes and boot?).
+- documentation
 
-- Server: error handling - server should NOT raise exceptions due to client
+- GUI
 
 ===============================================================================================================
                                               Complete:
 ===============================================================================================================
+
+- Server: Implement a strike system for players that are playing (5 strikes and boot?).
+
+- Server: error handling - server should NOT raise exceptions due to client
 
 - Server: make sure to search the @waiting players list when doing name validation as well!!!
 
