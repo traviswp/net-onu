@@ -52,6 +52,6 @@ if false then
 end
 
 # wait for a key to be pressed before killing all processes
-puts "press any key to kill spawned clients"
+puts "press the enter key to kill spawned clients"
 char = STDIN.getc
 system('pkill xterm')

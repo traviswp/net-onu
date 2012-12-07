@@ -12,6 +12,7 @@ $min        = Constants::MIN
 $max        = Constants::MAX
 $timeout    = Constants::TIMEOUT
 $lobby      = Constants::LOBBY
+$debug_on   = false
 
 #
 # parse_args () -- server can redefine port#, timeout, min/max # of players, and lobby capacity
@@ -32,6 +33,8 @@ def parse_args ()
             $max = ARGV[argc+1].to_i
         elsif (arg.to_s).eql?("-lobby")          # set the lobby capacity
             $lobby = ARGV[argc+1].to_i
+        elsif (arg.to_s).eql?("-d")              # set the debug flag
+            $debug_on = true
         end
         
         argc+=1                                  # increment processed args
@@ -47,6 +50,6 @@ end
 
 if __FILE__ == $0 then
     parse_args()
-    unoGameServer = GameServer.new($port, $min, $max, $timeout, $lobby)
+    unoGameServer = GameServer.new($port, $min, $max, $timeout, $lobby, $debug_on)
     unoGameServer.run()
 end #if

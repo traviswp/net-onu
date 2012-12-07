@@ -44,7 +44,6 @@ class Player
 	end
 
 	def addStrike()
-puts "addin a strike to #{name}...(I'm in the player class if you want to delete this message...)"
 		@strikes = @strikes + 1
 	end
 

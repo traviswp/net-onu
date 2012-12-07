@@ -43,7 +43,7 @@ class GameClient
 		@player       = nil                    # Player variable for gameplay
 		@attempt      = 0                       # Player attempts
 		@top          = nil                    # Top card of deck
-		@playing?     = false                   # Boolean representing if player is actually playing in the game
+		@playing      = false                   # Boolean representing if player is actually playing in the game
 
 		# variables for game play tracking/output
 		@players_list   = []                    # Contains all the members of a game
@@ -878,6 +878,8 @@ class GameClient
     #                    client game display methods                     #
 	#                                                                    #
     ######################################################################
+    $width = 70
+
 
 	def start_game_dialog()
 
@@ -886,92 +888,92 @@ class GameClient
 		list = @players_list.join(", ")
 		name = @player.getName()
 	
-		puts "-----------------------------------------------------------------"
-		puts "|                                                               |"
-		puts "|" +  "UNO game is beginning! Welcome, #{name}!".center(63) +  "|"
-		puts "|                                                               |"
-		puts "-----------------------------------------------------------------"
+		puts "------------------------------------------------------------------------"
+		puts "|                                                                      |"
+		puts "|" +  "UNO game is beginning! Welcome, #{name}!".center($width) +  "|"
+		puts "|                                                                      |"
+		puts "------------------------------------------------------------------------"
 		list_players()
 	end
 
 	def show_auto()
 		name = @player.getName()
-		puts "-----------------------------------------------------------------"
-		puts "|"+  "Client #{name} starting in automated mode ".center(63)  +"|"
-		puts "-----------------------------------------------------------------"		
+		puts "------------------------------------------------------------------------"
+		puts "|"+  "Client #{name} starting in automated mode ".center($width)  +"|"
+		puts "------------------------------------------------------------------------"
 	end
 
 	def show_deal(cards)
-		puts "-----------------------------------------------------------------"
-		puts "|"            +   "Dealt: [#{cards}]".center(63)    +          "|"
-		puts "-----------------------------------------------------------------"
+		puts "------------------------------------------------------------------------"
+		puts "|"            +   "Dealt: [#{cards}]".center($width)    +          "|"
+		puts "------------------------------------------------------------------------"
 	end
 
 	def help_dialog()
 
 		system ("clear")
 
-		puts "-----------------------------------------------------------------"
-		puts "| UNO Help Menu:                                                |"
-		puts "|                                                               |"
-		puts "|    'chat'        chat with other players                      |"
-		puts "|    'help'        show help menu                               |"
-		puts "|    'list'        show players in this game                    |"
-		puts "|    'play XX'     play card XX                                 |"
-		puts "|    'quit'        quit current game                            |"
-		puts "|    'show'        show current cards                           |"
-		puts "|    'top'         show current top card                        |"
-		puts "|                                                               |"
-		puts "-----------------------------------------------------------------"
+		puts "------------------------------------------------------------------------"
+		puts "| UNO Help Menu:                                                       |"
+		puts "|                                                                      |"
+		puts "|    'chat'        chat with other players                             |"
+		puts "|    'help'        show help menu                                      |"
+		puts "|    'list'        show players in this game                           |"
+		puts "|    'play XX'     play card XX                                        |"
+		puts "|    'quit'        quit current game                                   |"
+		puts "|    'show'        show current cards                                  |"
+		puts "|    'top'         show current top card                               |"
+		puts "|                                                                      |"
+		puts "------------------------------------------------------------------------"
 	end
 
 	def list_players()
 		list = @players_list.join(", ")
-		puts "-----------------------------------------------------------------"
-		puts "|"     +    "Players: #{list}".center(63)    +    "|"
-		puts "-----------------------------------------------------------------"
+		puts "------------------------------------------------------------------------"
+		puts "|"     +    "Players: #{list}".center($width)    +    "|"
+		puts "------------------------------------------------------------------------"
 	end
 
 	def show_go()
-		puts "-----------------------------------------------------------------"
-		puts "|"     +            "Your Turn!".center(63)            +       "|"
-		puts "|"     +       "Top Card: [#{@top}]".center(63)        +       "|"
-		puts "|"     +         "My #{@player}".center(63)            +       "|"
-		puts "-----------------------------------------------------------------"
+		puts "------------------------------------------------------------------------"
+		puts "|"     +            "Your Turn!".center($width)            +       "|"
+		puts "|"     +       "Top Card: [#{@top}]".center($width)        +       "|"
+		puts "|"     +         "My #{@player}".center($width)            +       "|"
+		puts "------------------------------------------------------------------------"
 	end
 
 
 	def show_cards()
-		puts "-----------------------------------------------------------------"
-		puts "|"               +   "#{@player}".center(63)    +              "|"
-		puts "-----------------------------------------------------------------"
+		puts "------------------------------------------------------------------------"
+		puts "|"               +   "#{@player}".center($width)    +              "|"
+		puts "------------------------------------------------------------------------"
 	end
 
 	def show_play(card, name)
-		puts "-----------------------------------------------------------------"
-		puts "|"      +    "#{name} Played: [#{card}]".center(63)    +        "|"
-		puts "-----------------------------------------------------------------"
+		puts "------------------------------------------------------------------------"
+		puts "|"      +    "#{name} Played: [#{card}]".center($width)    +        "|"
+		puts "------------------------------------------------------------------------"
 	end
 
 	def show_top()
-		puts "-----------------------------------------------------------------"
-		puts "|"        +      "Top Card: [#{@top}]".center(63)    +          "|"
-		puts "-----------------------------------------------------------------"
+		puts "------------------------------------------------------------------------"
+		puts "|"        +      "Top Card: [#{@top}]".center($width)    +          "|"
+		puts "------------------------------------------------------------------------"
 	end
 
 	def show_quit()
 		name = @player.getName()
-		puts "-----------------------------------------------------------------"
-		puts "|                                                               |"
-		puts "|"    +    "Leaving UNO Game. Bye, #{name}!".center(63)    +   "|"
-		puts "|                                                               |"
-		puts "-----------------------------------------------------------------"		
+		puts "------------------------------------------------------------------------"
+		puts "|                                                                      |"
+		puts "|"    +    "Leaving UNO Game. Bye, #{name}!".center($width)    +   "|"
+		puts "|                                                                      |"
+		puts "------------------------------------------------------------------------"
 	end
 
 	def show_uno(name)
-		puts "-----------------------------------------------------------------"
-		puts "|"         +       "#{name}: UNO!".center(63)       +           "|"
-		puts "-----------------------------------------------------------------"		
+		puts "------------------------------------------------------------------------"
+		puts "|"         +       "#{name}: UNO!".center($width)       +           "|"
+		puts "------------------------------------------------------------------------"
 	end
 
 	def show_win(name)
@@ -983,19 +985,19 @@ class GameClient
 		w = @player.getGamesWon()
 
 		if name == "" then
-			puts "-----------------------------------------------------------------"
-			puts "|"+"Sorry, The Game Ended Due To Insufficient Players...".center(63)+"|"
-			puts "-----------------------------------------------------------------"
+		puts "------------------------------------------------------------------------"
+			puts "|"+"Sorry, The Game Ended Due To Insufficient Players...".center($width)+"|"
+		puts "------------------------------------------------------------------------"
 			log("server: game ended due to insufficient players")
 		elsif name == @player.getName() then
-			puts "-----------------------------------------------------------------"
-			puts "|"+ "Congratulations, #{name}! You Won! (#{w}/#{p})".center(63) +"|"
-			puts "-----------------------------------------------------------------"
+		puts "------------------------------------------------------------------------"
+			puts "|"+ "Congratulations, #{name}! You Won! (#{w}/#{p})".center($width) +"|"
+		puts "------------------------------------------------------------------------"
 			log("congratulations, player won! (#{w}/#{p}): [GG|#{name}]")
 		else
-			puts "-----------------------------------------------------------------"
-			puts "|"        +  "#{name} Wins! (#{w}/#{p})".center(63)  +          "|"
-			puts "-----------------------------------------------------------------"
+		puts "------------------------------------------------------------------------"
+			puts "|"        +  "#{name} Wins! (#{w}/#{p})".center($width)  +          "|"
+		puts "------------------------------------------------------------------------"
 			log("player #{name} won! (#{w}/#{p}): [GG|#{name}]")
 		end
 
