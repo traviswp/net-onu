@@ -83,11 +83,8 @@ the game more fun so be on the look out for that!
 
 Enjoy!
 
-----------------------------------------------------------------
+## Extra:
 
 A useful command for cleaning up your local repository:
 
 git ls-files --deleted -z | xargs -0 git rm
-
-----------------------------------------------------------------
-
