@@ -5,9 +5,16 @@
 ######Date  : December 2012
 ----------------------------------------------------------------
 
+##About:
+
 net-onu (<-- backwards spelling)
 
-  A networked implementation of the game "UNO".
+  This is a networked implementation of the game "UNO". This was done for the 
+  Computer Science 367 class at Western Washington University in which a class
+  of 35 or so students had to plan out a specification for how to pass messages
+  to and from client/server applications to play UNO. The goal at the end of 
+  the course was to try and play our servers/clients against other people's
+  servers/clients. Pretty fun, right? Some details about my solution follow.
 
 The two main entry points are:
 
