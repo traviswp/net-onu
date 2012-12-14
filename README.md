@@ -52,8 +52,8 @@ Some additional (fun) scripts that I wrote for this product are:
 The `spawn.rb` script can:
 
     - spin up an instance of the server
-    - spin up a manual client
-    - spin up a to-be-determined number of clients
+    - spin up an instance of a manual client
+    - spin up a to-be-determined number of clients (5 by default)
 
 By default the server will run on localhost & the clients will connect to 
 that instance of the server. If no server is started with this script, you
@@ -73,7 +73,10 @@ the game more fun so be on the look out for that!
 Enjoy!
 
 ----------------------------------------------------------------
+
 A useful command for cleaning up your local repository:
 
 git ls-files --deleted -z | xargs -0 git rm
+
 ----------------------------------------------------------------
+
