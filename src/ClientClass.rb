@@ -198,6 +198,7 @@ class GameClient
 				arguments = result[1].to_s
 				process(command, arguments)
 				break
+
 			end
 
 		end
@@ -726,10 +727,14 @@ class GameClient
 				end
 			}
 
-			if name != @player.getName()
-				puts "player '#{name}' has connected"
-			end
-			log("server: new player '#{name}' connected: [PLAYERS|#{msg}]")
+            if @player != nil then 
+
+			    if name != @player.getName()
+				    puts "player '#{name}' has connected"
+			    end
+			    log("server: new player '#{name}' connected: [PLAYERS|#{msg}]")
+
+            end
 
 		else # (prev.size() >= @players_list.size()) --> player disconnected
 

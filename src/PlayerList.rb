@@ -29,6 +29,10 @@ class PlayerList
 		return @player_list.shift()
 	end # getFront
 
+	def getPos(player)
+		return @player_list.index(player)
+	end
+
 	def getPlayerFromSocket(socket)
 		rp = @player_list.find { |player| player.socket == socket }
 		return rp

@@ -44,7 +44,7 @@ class GameServer
         # variables: service connections via call to 'select'
         @port             = port                          # Port
         @r_descriptors    = Array.new()                   # Collection of server's read sockets
-        @server_socket    = TCPServer.new("", port)       # The server socket (TCPServer)
+        @server_socket    = TCPServer.new("", @port)       # The server socket (TCPServer)
         @r_descriptors.push(@server_socket)               # Add serverSocket to descriptors
 		@message_queues  = Hash.new()                     # Contains buffers for interaction with each individual client
         
@@ -66,8 +66,8 @@ class GameServer
 		@player_start     = 0
 		@inactive_wait    = Constants::PLAYER_TIMEOUT     # Default player response time - drop connection if exceeded
 
-		############################ DEBUG ############################
 		@player_strikes_allowed   = 5
+
 		############################ TESTING ############################
 		@count = 0
 		############################ TESTING ############################
@@ -248,16 +248,23 @@ class GameServer
 					if ((current_time - @player_start).abs() >= @inactive_wait) then
 
 						# get the offending player
-						player = getPlayerFromPos(@current)
-						name = player.getName()
+						
+						#player = getPlayerFromPos(@current)
+						player = getCurrentPlayer()
 
-						# log action & inform client of the problem
-						inactiveMsg = "#{name}: connection dropped: exceeded max inactivity time"
-						msg = ServerMsg.message("INVALID", [inactiveMsg])
-						send(msg, player.getSocket())
+						if player != nil then
 
-						# drop the player & continue
-						drop_connection(player)
+							name = player.getName()
+
+							# log action & inform client of the problem
+							inactiveMsg = "#{name}: connection dropped: exceeded max inactivity time"
+							msg = ServerMsg.message("INVALID", [inactiveMsg])
+							send(msg, player.getSocket())
+
+							# drop the player & continue
+							drop_connection(player)
+
+						end
 
 					end
 
@@ -313,7 +320,7 @@ class GameServer
 	#
 	def debug(msg)
         if @debug_flag then
-            puts "debug: #{msg}"
+            puts "debug: (#{@state}) #{msg}"
         end
 	end
 
@@ -517,6 +524,32 @@ class GameServer
 	#
 	def close_connection(socket) 
 
+		p = @players.getPlayerFromSocket(socket) 
+		if p != nil then
+			log("player #{p.getName()} is disconnecting...")
+
+			if @players.getPos(p) < @players.getPos(getCurrentPlayer()) then
+				log("fixing @current pointer....")
+				@current = @current -1
+			end
+
+		end
+
+        # set variables determining if the player to be removed is the current player
+        next_player = false
+		name = ""
+
+        player = getCurrentPlayer()
+        if player != nil then
+            pSocket = player.getSocket()
+
+            if socket == pSocket then
+                next_player = true
+				name = player.getName()
+            end
+
+        end
+
 		#
 		# check: player's status
 		#
@@ -535,8 +568,9 @@ class GameServer
 			if ((@state != :beforegame) && (@state != :endgame)) then
 
 				# check: only call play if that is a possible action
-				if (@players.getSize() > 1) then
+				if (@players.getSize() > 1 && next_player) then
 
+					log("I am disconnecting & I am #{name} - moving to next player...")
 					move()
 					play()
 
@@ -547,7 +581,7 @@ class GameServer
 		end
 
 		# handle descriptors
-        begin 
+        begin
 		    socket.close()
 		    @r_descriptors.delete(socket)
         rescue Exception => e
@@ -584,12 +618,16 @@ class GameServer
 			end
 
 			if data == "" then
-				debug "socket read data is empty"
+				log("drop connection: socket read data is empty")
+				drop_connection(socket)
+				return nil
 			end
 
 			# check: nil value from read?
 			if data == nil then
 			#	exit(0)
+				log("socket read data is nil")
+				#drop_connection(socket)
 				return nil
 			end
 
@@ -717,7 +755,7 @@ class GameServer
 
                 # invalid: [ invalid contents ]
 			    @message_queues[socket].sub!( /\[([^\[\]]*)\]/i, "")
-		        handle_invalid("(1) '[#{$1}]' is an invalid message", socket)
+		        handle_invalid("(1) '[#{$1}]' is an invalid message construct", socket)
 
             end
 
@@ -938,7 +976,7 @@ class GameServer
 					send(msg, socket)
 
 					@waiting.add(p)
-					log("adding #{p.getName()} to waiting list - below max")
+					log("adding #{p.getName()} to waiting list - game in progress")
 				end
 
 			else
@@ -1020,6 +1058,7 @@ class GameServer
 			end
 
 			# inform the player
+			message = "#{player.getName()} : #{message}"
 			msg = ServerMsg.message("INVALID", [message])
 			send(msg, socket)
 
@@ -1095,7 +1134,7 @@ class GameServer
 	end 
 
 	def play()
-	
+
 		player = getCurrentPlayer()
 
 		# send [DEAL|cards] if the last card played was a draw 2 or draw 4
@@ -1108,8 +1147,10 @@ class GameServer
 
 		# send [GO|CV]
 		if player != nil then
-			msg = ServerMsg.message("GO", [top.to_s]) 
+			msg = ServerMsg.message("GO", [top.to_s])
 			send(msg, player)
+			log("send: #{player.getName()}: #{msg}")
+			log("me: #{@current}")
 
 			# (new state: waitForAction)
 			@state = :waitaction
@@ -1151,139 +1192,150 @@ class GameServer
 
 	def discard()
 
-		card = Card.new()
-		cards = getCurrentPlayerHand()
+		begin
 
-		# check: is this a valid card?
-		result = card.valid_card?(@card) # *** this is redundant - card was validated in method 'process' ***
-		if (!result) then
-			msg = "sorry, '" + @card.to_s + "' is not a valid card."
-			msg = ServerMsg.message("INVALID", [msg])
-			send(msg, @playerPlayed)
-			return
-		end
+			card = Card.new()
+			cards = getCurrentPlayerHand()
 
-		# check: is card playable? (check the top card)
-		result = playable?(@card)
-		if (!result) then
-			msg = "sorry, '" + @card.to_s + "' cannot be played right now. the top card is: " + top().to_s
-			msg = ServerMsg.message("INVALID", [msg])
-			send(msg, @playerPlayed)
-			return
-		end
-
-		# check: does the player have this card?
-		pre = @card.getColor()
-		suf = @card.getIdentifier()
-		pos = nil
-		found = false
-		if !(@card.to_s == "NN") then
-			cards.each { |c|
-				if (c.prefix == pre && c.suffix == suf) then
-					pos = cards.index(c)
-					found = true
-					break
-				elsif (c.suffix == "W" && suf == "W") then # special: wild?
-					pos = cards.index(c)
-					found = true
-					break
-				elsif (c.suffix == "F" && suf == "F") then # special: wild draw 4?
-					pos = cards.index(c)
-					found = true
-					break
-				end			
-			}
-
-			# if found = false, the player does not have a discardable card
-			if (!found) then
-				msg = "sorry, you cannot play '" + @card.to_s + "' because you do not have that card."
+			# check: is this a valid card?
+			result = card.valid_card?(@card) # *** this is redundant - card was validated in method 'process' ***
+			if (!result) then
+				msg = "sorry, '" + @card.to_s + "' is not a valid card."
 				msg = ServerMsg.message("INVALID", [msg])
 				send(msg, @playerPlayed)
 				return
 			end
-		end
 
-		#####################################################
-		# determine card type & appropriate action to take: #
-		#####################################################
-
-		if ((@action == :none) && (@card.to_s == "NN")) then # no play
-
-			@attempt = @attempt + 1
-
-			if (@attempt == 1) then
-				# current player draw 1
-				draw(@playerPlayed, 1)
-
-				# issue go command to player to try again
-				msg = ServerMsg.message("GO", [top.to_s]) 
+			# check: is card playable? (check the top card)
+			result = playable?(@card)
+			if (!result) then
+				msg = "sorry, '" + @card.to_s + "' cannot be played right now. the top card is: " + top().to_s
+				msg = ServerMsg.message("INVALID", [msg])
 				send(msg, @playerPlayed)
 				return
 			end
+
+			# check: does the player have this card?
+			pre = @card.getColor()
+			suf = @card.getIdentifier()
+			pos = nil
+			found = false
+			if !(@card.to_s == "NN") then
+				cards.each { |c|
+					if (c.prefix == pre && c.suffix == suf) then
+						pos = cards.index(c)
+						found = true
+						break
+					elsif (c.suffix == "W" && suf == "W") then # special: wild?
+						pos = cards.index(c)
+						found = true
+						break
+					elsif (c.suffix == "F" && suf == "F") then # special: wild draw 4?
+						pos = cards.index(c)
+						found = true
+						break
+					end			
+				}
+
+				# if found = false, the player does not have a discardable card
+				if (!found) then
+					msg = "sorry, you cannot play '" + @card.to_s + "' because you do not have that card."
+					msg = ServerMsg.message("INVALID", [msg])
+					send(msg, @playerPlayed)
+					return
+				end
+			end
+
+			#####################################################
+			# determine card type & appropriate action to take: #
+			#####################################################
+
+			if ((@action == :none) && (@card.to_s == "NN")) then # no play
+
+				@attempt = @attempt + 1
+
+				if (@attempt == 1) then
+					# current player draw 1
+					draw(@playerPlayed, 1)
+
+					# issue go command to player to try again
+					msg = ServerMsg.message("GO", [top.to_s]) 
+					send(msg, @playerPlayed)
+					log("send: #{@playerPlayed.getName()}: #{msg}")
+
+					@state = :waitaction
+					@player_start = Time.now().to_i
+
+					return
+				end
 		
-		elsif ((@action == :none) && (@card.to_s != "NN")) then # no action - valid play (wild or number card
+			elsif ((@action == :none) && (@card.to_s != "NN")) then # no action - valid play (wild or number card
 
-			#player discards @card onto discard pile
-			@deck.discard(@card)
+				#player discards @card onto discard pile
+				@deck.discard(@card)
 
-			#remove card from player's hand
-			@playerPlayed.discard(@card)
+				#remove card from player's hand
+				@playerPlayed.discard(@card)
 
-		elsif (@action == :skip) then # skip
+			elsif (@action == :skip) then # skip
 
-			#player discards @card onto discard pile
-			@deck.discard(@card)
+				#player discards @card onto discard pile
+				@deck.discard(@card)
 
-			#remove card from player's hand
-			@playerPlayed.discard(@card)
+				#remove card from player's hand
+				@playerPlayed.discard(@card)
 
-			#skip next player
-			skip!()
+				#skip next player
+				skip!()
 
-		elsif (@action == :reverse) then # reverse
+			elsif (@action == :reverse) then # reverse
 
-			#player discards @card onto discard pile
-			@deck.discard(@card)
+				#player discards @card onto discard pile
+				@deck.discard(@card)
 
-			#remove card from player's hand
-			@playerPlayed.discard(@card)
+				#remove card from player's hand
+				@playerPlayed.discard(@card)
 
-			#reverse direction
-			reverse!()
+				#reverse direction
+				reverse!()
 
-		elsif (@action == :draw2) then # draw 2
+			elsif (@action == :draw2) then # draw 2
 
-			#player discards @card onto discard pile
-			@deck.discard(@card)
+				#player discards @card onto discard pile
+				@deck.discard(@card)
 
-			#remove card from player's hand
-			@playerPlayed.discard(@card)
+				#remove card from player's hand
+				@playerPlayed.discard(@card)
 
-			#next player draws 2 cards
+				#next player draws 2 cards
 
-		elsif (@action == :wild) then # wild
+			elsif (@action == :wild) then # wild
 
-			#player discards @card onto discard pile
-			@deck.discard(@card)
+				#player discards @card onto discard pile
+				@deck.discard(@card)
 
-			#remove card from player's hand
-			@playerPlayed.discard(@card)
+				#remove card from player's hand
+				@playerPlayed.discard(@card)
 
-		elsif (@action == :draw4) then # draw 4
+			elsif (@action == :draw4) then # draw 4
 
-			#player discards @card onto discard pile
-			@deck.discard(@card)
+				#player discards @card onto discard pile
+				@deck.discard(@card)
 
-			#remove card from player's hand
-			@playerPlayed.discard(@card)
+				#remove card from player's hand
+				@playerPlayed.discard(@card)
 
-			#next player draws 4 cards
+				#next player draws 4 cards
+			end
+
+			# set game environment variables
+			@attempt = 0
+			@state = :afterdiscard
+			afterDiscard()
+
+		rescue Exception => e
+			log("discard-error: #{e.message}")
 		end
-
-		# set game environment variables
-		@attempt = 0
-		@state = :afterdiscard
-		afterDiscard()
 
 	end
 
@@ -1388,6 +1440,7 @@ class GameServer
 		    player.cards.concat(cards)
 		    msg = ServerMsg.message("DEAL", card_list(cards))
 		    send(msg, player)
+			log("#{player.getName()}: #{msg}")
         end
 	end # draw
 
