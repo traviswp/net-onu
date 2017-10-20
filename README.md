@@ -1,22 +1,18 @@
-## About:
+# Project: net-onu (network UNO)
 
-#####Author : Travis W. Peters
-#####School : Western Washington University
-#####Date   : December 2012
-
-#####Project: net-onu
-
-  This is a networked implementation of the game "UNO". This was done for the 
-  Computer Science 367 class at Western Washington University in which a class
-  of 35 or so students had to plan out a specification for how to pass messages
-  to and from client/server applications to play UNO. The goal at the end of 
-  the course was to try and play our servers/clients against other people's
-  servers/clients. Pretty fun, right? Some details about my solution follow.
+This is a networked implementation of the game "UNO". 
+This was done for the Computer Science 367 class at Western Washington University in which a class of 35 or so students 
+had to plan out a specification for how to pass messages to and from client/server applications to play UNO. 
+The goal at the end of the course was to try and play our servers/clients against other people's servers/clients. 
+Pretty fun, right? Some details about my solution follow.
   
-  Note: The name of the project is spelt 'funny' because I had it stored in public source
-  control throughout the quarter. To avoid having my solution easy to find, I changed the 
-  spelling so that it wasn't easily search on. The project details that follow were not
-  added until after the assignment was due so that didn't get hit on searches either). 
+Note: The name of the project is spelt 'funny' because I had it stored in public source control throughout the quarter. 
+To avoid having my solution easy to find, I changed the spelling so that it wasn't easily search on. 
+The project details that follow were not added until after the assignment was due so that didn't get hit on searches either). 
+
+##### Author : Travis W. Peters
+##### School : Western Washington University
+##### Date   : December 2012
 
 ## Project Details:
 
@@ -87,4 +83,6 @@ Enjoy!
 
 A useful command for cleaning up your local repository:
 
+```bash
 git ls-files --deleted -z | xargs -0 git rm
+```
